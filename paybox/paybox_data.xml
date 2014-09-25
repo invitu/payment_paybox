@@ -7,7 +7,7 @@
 <form method="POST" action="https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi">
     <input type="hidden" name="PBX_SITE" value="1999888">
     <input type="hidden" name="PBX_RANG" value="32">
-<input type="hidden" name="PBX_IDENTIFIANT" value="2">
+<input type="hidden" name="PBX_IDENTIFIANT" value="107904482">
 <input type="hidden" name="PBX_TOTAL" value="1000">
 <input type="hidden" name="PBX_DEVISE" value="978">
 <input type="hidden" name="PBX_CMD" value="TESTPaybox">
