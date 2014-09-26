@@ -31,6 +31,7 @@
     'website': 'www.anybox.fr',
     'depends': [
         'base',
+        'web',
         'portal',
     ],
     'data': [
