@@ -1,5 +1,5 @@
-import openerp.http as http
-from openerp.http import request
+from openerp.addons.web import http as http
+from openerp.addons.web.http import request as request
 
 
 class PayboxController(http.Controller):
