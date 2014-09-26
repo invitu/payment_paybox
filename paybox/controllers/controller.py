@@ -1,14 +1,10 @@
-from openerp.addons.web import http as http
-from openerp.addons.web.http import httprequest as request
+# coding: utf-8
+from openerp.addons.web import http as openerpweb
 
 
-class PayboxController(http.Controller):
-    _cp_path = '/paybox/'
+class PayboxController(openerpweb.Controller):
+    _cp_path = '/paybox'
 
-    @http.httprequest
-    def get_response(self):
-        import pdb
-        pdb.set_trace()
-        req = request
-        print(req)
+    @openerpweb.httprequest
+    def index(self, req, **kw):
         return "<h1>This is a test</h1>"
