@@ -3,8 +3,9 @@ from openerp.addons.web.http import httprequest as request
 
 
 class PayboxController(http.Controller):
+    _cp_path = '/paybox/'
 
-    @http.route('/paybox/*', type='http')
+    @http.httprequest
     def get_response(self):
         import pdb
         pdb.set_trace()
