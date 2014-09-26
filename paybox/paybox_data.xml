@@ -1,24 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
-    <data noupdate="1">
+    <data noupdate="0">
         <record id="paybox_acquirer" model="portal.payment.acquirer">
             <field name="name">Paybox</field>
             <field name="form_template"><![CDATA[
 <form method="POST" action="https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi">
     <input type="hidden" name="PBX_SITE" value="1999888">
     <input type="hidden" name="PBX_RANG" value="32">
-<input type="hidden" name="PBX_IDENTIFIANT" value="107904482">
-<input type="hidden" name="PBX_TOTAL" value="1000">
-<input type="hidden" name="PBX_DEVISE" value="978">
-<input type="hidden" name="PBX_CMD" value="TESTPaybox">
-<input type="hidden" name="PBX_PORTEUR" value="test@paybox.com">
-<input type="hidden" name="PBX_RETOUR" value="Mt:M;Ref:R;Auto:A;Erreur:E">
-<input type="hidden" name="PBX_HASH" value="SHA512">
-<input type="hidden" name="PBX_TIME" value="2011-02-28T11:01:50+01:00">
-<input type="hidden" name="PBX_HMAC" value="F2A799494504F9E50E91E44C129A45BBA2
-6D23F2760CDF92B93166652B9787463E12BAD4C660455FB0447F882B22256DE6E703AD6669B73C59
-B034AF0CFC7E">
-<input type="submit" value="Envoyer">
+    <input type="hidden" name="PBX_HASH" value="SHA512">
+    <input type="hidden" name="PBX_CMD" value="1">
+    <input type="hidden" name="PBX_IDENTIFIANT" value="110647233">
+    <input type="hidden" name="PBX_TOTAL" value="1000">
+    <input type="hidden" name="PBX_DEVISE" value="978">
+    <input type="hidden" name="PBX_PORTEUR" value="test@paybox.com">
+    <input type="hidden" name="PBX_RETOUR" value="Mt:M;Ref:R;Auto:A;Erreur:E">
+    <input type="hidden" name="PBX_TIME" value="2014-09-26T11:01:50+01:00">
+    <input type="hidden" name="PBX_HMAC" value="E1E0CD0D4388A2924C6279C463512B4D3D9478EBABFE34942886F58D8D847A2B7CE14DC032D5303912A3DF26AA5FB5E92F88132D39FF77B9B4A5DF7D4FCED1A7">
+    <input type="submit" value="Envoyer">
 </form>            
 ]]></field>
         </record>
