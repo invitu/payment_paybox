@@ -5,21 +5,28 @@
             <field name="name">Paybox</field>
             <field name="form_template"><![CDATA[
 <form method="POST" action="https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi">
-    <input type="hidden" name="PBX_SITE" value="1999888">
-    <input type="hidden" name="PBX_RANG" value="32">
-    <input type="hidden" name="PBX_HASH" value="SHA512">
-    <input type="hidden" name="PBX_CMD" value="${reference}">
-    <input type="hidden" name="PBX_IDENTIFIANT" value="110647233">
-    <input type="hidden" name="PBX_TOTAL" value="${amount}">
-    <input type="hidden" name="PBX_DEVISE" value="${devise}">
-    <input type="hidden" name="PBX_PORTEUR" value="test@paybox.com">
-    <input type="hidden" name="PBX_RETOUR" value="${retour}">
-    <input type="hidden" name="PBX_TIME" value="${time}">
-    <input type="hidden" name="PBX_EFFECTUE" value="${effectue}">
-    <input type="hidden" name="PBX_RUF1" value="POST">
-    <input type="hidden" name="PBX_REPONDRE_A" value="http://localhost:8069">
-    <input type="hidden" name="PBX_HMAC" value="${hmac}">
-    <input type="submit" value="Envoyer">
+    <input type="hidden" name="PBX_SITE" value="1999888"/>
+    <input type="hidden" name="PBX_RANG" value="32"/>
+    <input type="hidden" name="PBX_HASH" value="SHA512"/>
+    <input type="hidden" name="PBX_CMD" value="${reference}"/>
+    <input type="hidden" name="PBX_IDENTIFIANT" value="110647233"/>
+    <input type="hidden" name="PBX_TOTAL" value="${amount}"/>
+    <input type="hidden" name="PBX_DEVISE" value="${devise}"/>
+    <input type="hidden" name="PBX_PORTEUR" value="test@paybox.com"/>
+    <input type="hidden" name="PBX_RETOUR" value="${retour}"/>
+    <input type="hidden" name="PBX_TIME" value="${time}"/>
+    <input type="hidden" name="PBX_EFFECTUE" value="${effectue}"/>
+    <input type="hidden" name="PBX_RUF1" value="POST"/>
+    <input type="hidden" name="PBX_REPONDRE_A" value="http://localhost:8069"/>
+    <input type="hidden" name="PBX_HMAC" value="${hmac}"/>
+    <table>
+        <tr>
+            <td style="text-align: center; padding: 5px;"><img src="paybox/static/src/img/paiement-paybox.jpg"/></td>
+        </tr>
+        <tr>
+            <td style="text-align: center; padding: 5px;"><input type="submit" value="Payer en ligne" style="background: none repeat scroll 0 0 #FFFFFF !important;"/></td>
+        </tr>
+    </table>
 </form>            
 ]]></field>
         </record>
