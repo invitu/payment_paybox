@@ -18,7 +18,6 @@
     <input type="hidden" name="PBX_EFFECTUE" value="${effectue}">
     <input type="hidden" name="PBX_RUF1" value="POST">
     <input type="hidden" name="PBX_REPONDRE_A" value="http://localhost:8069">
-    <input type="hidden" name="DB" value="${db}">
     <input type="hidden" name="PBX_HMAC" value="${hmac}">
     <input type="submit" value="Envoyer">
 </form>            
