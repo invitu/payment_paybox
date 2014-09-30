@@ -6,6 +6,8 @@ from urllib import quote as quote
 import logging
 from datetime import datetime
 from openerp.tools.translate import _
+from openerp.tools import float_repr
+
 
 _logger = logging.getLogger(__name__)
 
@@ -35,7 +37,8 @@ class PayboxAcquirer(osv.Model):
         # reference += '-'+cr.dbname
         for this in self.browse(cr, uid, acquirer_ids):
             # Paybox case
-            if this.name == 'Paybox':
+            acquirer = this.name
+            if acquirer == 'Paybox':
                 # The secret key, need to be stored somewhere else
                 key = '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF'
                 # The paybox amount is formated in cents so we need to convert
@@ -69,7 +72,8 @@ class PayboxAcquirer(osv.Model):
             if content:
                 html_forms.append(content)
         html_block = '\n'.join(filter(None, html_forms))
-        return self._wrap_payment_block(cr, uid, html_block, amount, currency, context=context)
+        return self._wrap_payment_block(
+            cr, uid, html_block, amount, currency, acquirer=acquirer, context=context)
 
     def compute_hmac(self, key, hash_name, args):
         binary_key = binascii.unhexlify(key)
@@ -107,3 +111,33 @@ class PayboxAcquirer(osv.Model):
             _logger.exception("failed to render mako template value for payment.acquirer %s: %r",
                               this.name, this.form_template)
             return
+
+    def _wrap_payment_block(self, cr, uid, html_block, amount, currency, acquirer=None, context=None):
+        if not html_block:
+            link = '#action=account.action_account_config'
+            payment_header = _('You can finish the configuration in the <a href="%s">Bank&Cash settings</a>') % link
+            amount = _('No online payment acquirers configured')
+            group_ids = self.pool.get('res.users').browse(cr, uid, uid, context=context).groups_id
+            if any(group.is_portal for group in group_ids):
+                return ''
+        else:
+            payment_header = _('Pay safely online')
+            currency_str = currency.symbol or currency.name
+            if acquirer and acquirer == 'Paybox':
+                amount_str = float_repr(
+                    (float(amount)/100),
+                    self.pool.get('decimal.precision').precision_get(cr, uid, 'Account'))
+                amount = u"%s %s" % ((currency_str, amount_str) if currency.position == 'before' else (amount_str, currency_str))
+            else:
+                amount_str = float_repr(
+                    amount, self.pool.get('decimal.precision').precision_get(cr, uid, 'Account'))
+                amount = u"%s %s" % ((currency_str, amount_str) if currency.position == 'before' else (amount_str, currency_str))
+
+        result = """<div class="payment_acquirers">
+                         <div class="payment_header">
+                             <div class="payment_amount">%s</div>
+                             %s
+                         </div>
+                         %%s
+                     </div>""" % (amount, payment_header)
+        return result % html_block
