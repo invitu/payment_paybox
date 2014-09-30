@@ -51,7 +51,7 @@ class PayboxAcquirer(osv.Model):
                 site = 1999888
                 porteur = 'test@paybox.com'
                 retour = 'Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K'
-                url_effectue = 'http://localhost:8069/paybox'
+                url_effectue = 'http://localhost:8069/paybox/?db=%s' % cr.dbname
                 time = datetime.now()
                 # We need to concatenate the args to compute the hmac
                 args = ('PBX_SITE=' + str(site) + '&PBX_RANG=' + str(rang) +
