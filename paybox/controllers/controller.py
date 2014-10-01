@@ -2,9 +2,12 @@
 from openerp.addons.web import http as openerpweb
 import logging
 from openerp.modules.registry import RegistryManager
-from openerp import pooler, SUPERUSER_ID
+from openerp import pooler, SUPERUSER_ID, osv
+from ..paybox_signature import Signature
 
 logger = logging.getLogger(__name__)
+
+sign = Signature()
 
 
 class PayboxController(openerpweb.Controller):
@@ -13,8 +16,12 @@ class PayboxController(openerpweb.Controller):
     @openerpweb.httprequest
     def index(self, req, **kw):
         params = req.params
-        ref, db, montant = params['Ref'], params['db'], params['Montant']
+        ref, db, montant = params['Ref'], params['db'], params['Mt']
+        signature = params['Signature']
         erreur = params['Erreur']
+        verified = sign.verify(signature)
+        if not verified:
+            raise osv.except_osv(u"Signature erronée", u"Le paiement ne peut-être enregistré")
         cr = pooler.get_db(db)
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
