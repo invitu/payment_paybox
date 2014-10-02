@@ -35,6 +35,8 @@ class PayboxController(openerpweb.Controller):
             logger.info(u"Paiement effectué avec succès")
             invoice_id = invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
             url = '#id=%s&view_type=form&model=account.invoice&menu_id=254&action=285' % (invoice_id)
+            cr.commit()
+            cr.close()
             return werkzeug.utils.redirect(url, 303)
         else:
             logger.info(u"Une erreur s'est produite, le paiement n'a pu être effectué")
