@@ -7,15 +7,12 @@ class Invoice(osv.Model):
 
     _inherit = 'account.invoice'
 
-    def validate_invoice_paybox(self, cr, uid, ref, montant):
-        """ Store payment for the referenced invoice with a specific amount """
-        context = {}
-        montant = float(montant)/100
+    def create_voucher(self, cr, uid, invoice_id, partner_id, montant, name, context=None):
+        """ Create the voucher with the right context to create move and move lines
+            that will be reconcile """
         voucher = self.pool.get('account.voucher')
         journal = self.pool.get('account.journal')
         account = self.pool.get('account.account')
-        today = datetime.strftime(datetime.today(), '%Y-%m-%d')
-        invoice_id = self.search(cr, uid, [('number', '=', ref)])
         bank_journal_id = journal.search(cr, uid, [('name', '=', 'Bank')])
         bank_account_id = account.search(cr, uid, [('name', '=', 'Bank')])
         if not bank_account_id:
@@ -24,18 +21,12 @@ class Invoice(osv.Model):
         if not bank_journal_id:
             raise osv.except_osv(u"Action impossible",
                                  u"Le journal 'Bank' n'a pas été trouvé")
-        if not invoice_id:
-            raise osv.except_osv(u"La facture %s n'a pas été trouvée",
-                                 u"Prenez contact avec l'administrateur") % (ref)
-        invoice_id = invoice_id[0]
-        invoice = self.browse(cr, uid, invoice_id)
         journal_id = bank_journal_id[0]
         account_id = bank_account_id[0]
-        partner_id = invoice.partner_id.id
-        name = 'Paybox %s' % (ref)
+        today = datetime.strftime(datetime.today(), '%Y-%m-%d')
         context = {'default_amount': montant, 'default_reference': False, 'uid': 1,
                    'invoice_type': 'out_invoice', 'journal_type': 'sale', 'default_type': 'receipt',
-                   'date': datetime.strftime(datetime.today(), '%Y-%m-%d'),
+                   'date': today,
                    'search_disable_custom_filters': True, 'voucher_special_currency_rate': 1.0,
                    'default_partner_id': partner_id, 'payment_expected_currency': 1,
                    'active_id': invoice_id, 'close_after_process': True, 'tz': 'Europe/Paris',
@@ -49,5 +40,24 @@ class Invoice(osv.Model):
         values.update(account_id=account_id, name=name)
         values['line_cr_ids'] = [[5, False, False], [0, False, value['line_cr_ids'][0]]]
         voucher_id = voucher.create(cr, uid, values, context=context)
+        return voucher_id
+
+    def validate_invoice_paybox(self, cr, uid, ref, montant):
+        """ Store payment for the referenced invoice with a specific amount
+            Create a voucher to register the payment for the invoice given.
+            Then run the workflow """
+        context = {}
+        # The amount is formatted in cent we need the convert the value
+        montant = float(montant)/100
+        voucher = self.pool.get('account.voucher')
+        invoice_id = self.search(cr, uid, [('number', '=', ref)])
+        if not invoice_id:
+            raise osv.except_osv(u"La facture %s n'a pas été trouvée",
+                                 u"Prenez contact avec l'administrateur") % (ref)
+        invoice_id = invoice_id[0]
+        invoice = self.browse(cr, uid, invoice_id)
+        name = 'Paybox %s' % (invoice.ref)
+        partner_id = invoice.partner_id.id
+        voucher_id = self.create_voucher(cr, uid, invoice_id, partner_id, montant, name)
         voucher.button_proforma_voucher(cr, uid, [voucher_id], context)
         return invoice_id
