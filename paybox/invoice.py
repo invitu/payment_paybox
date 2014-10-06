@@ -7,6 +7,17 @@ class Invoice(osv.Model):
 
     _inherit = 'account.invoice'
 
+    def _portal_payment_block(self, cr, uid, ids, fieldname, arg, context=None):
+        """ invoice residual amount is used instead of total amount """
+        result = dict.fromkeys(ids, False)
+        payment_acquirer = self.pool.get('portal.payment.acquirer')
+        for this in self.browse(cr, uid, ids, context=context):
+            if(this.type == 'out_invoice' and this.state not in ('draft', 'done')
+               and not this.reconciled):
+                result[this.id] = payment_acquirer.render_payment_block(
+                    cr, uid, this, this.number, this.currency_id, this.residual, context=context)
+        return result
+
     def create_voucher(self, cr, uid, invoice_id, partner_id, montant, name, context=None):
         """ Create the voucher with the right context to create move and move lines
             that will be reconcile """
@@ -56,7 +67,7 @@ class Invoice(osv.Model):
                                  u"Prenez contact avec l'administrateur") % (ref)
         invoice_id = invoice_id[0]
         invoice = self.browse(cr, uid, invoice_id)
-        name = 'Paybox %s' % (invoice.ref)
+        name = 'Paybox %s' % (invoice.number)
         partner_id = invoice.partner_id.id
         voucher_id = self.create_voucher(cr, uid, invoice_id, partner_id, montant, name)
         voucher.button_proforma_voucher(cr, uid, [voucher_id], context)
