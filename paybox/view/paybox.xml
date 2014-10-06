@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data noupdate="0">
+        <record id="view_paybox_settings" model="ir.ui.view">
+            <field name="name">Paybox settings</field>
+            <field name="model">paybox.settings</field>
+            <field name="priority" eval="8"/>
+            <field name="arch" type="xml">
+            <form string="Paybox settings" version="7.0" class="oe_form_configuration">
+                <header>
+                        <button string="Apply" type="object" name="execute" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" type="object" name="cancel" class="oe_link"/>
+                </header>
+                <separator string="Paybox settings"/>
+                <div>
+                    <label for="key" string="Key"/>
+                    <field name="key" class="oe_inline" password="True"/>
+                </div>
+                <div>
+                    <label for="shop_id" string="Shop id"/>
+                    <field name="shop_id" class="oe_inline"/>
+                </div>
+                <div>
+                    <label for="rank" string="Rank"/>
+                    <field name="rank" class="oe_inline"/>
+                </div>
+                <div>
+                    <label for="site" string="Site"/>
+                    <field name="site" class="oe_inline"/>
+                </div>
+            </form>
+            </field>
+        </record>
+        
+        <record id="action_settings_paybox" model="ir.actions.act_window">
+            <field name="name">Configure Paybox</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">paybox.settings</field>
+            <field name="view_id" ref="view_paybox_settings"/>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+        </record>
+        
+        <menuitem id="menu_paybox_settings"
+            parent="base.menu_config" name="Paybox"
+            action="action_settings_paybox"/>
+    </data>
+</openerp>

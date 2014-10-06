@@ -36,6 +36,7 @@
     ],
     'data': [
         'paybox_data.xml',
+        'view/paybox.xml',
     ],
     'demo_xml': [
     ],
