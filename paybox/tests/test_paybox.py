@@ -39,7 +39,8 @@ class TestPaybox(TransactionCase):
         self.invoice.action_move_create(cr, uid, [invoice_id])
         self.invoice.invoice_validate(cr, uid, [invoice_id])
         invoice = self.invoice.browse(cr, uid, invoice_id)
-        response = self.invoice.validate_invoice_paybox(cr, uid, invoice.number, invoice.residual)
+        amount = invoice.residual*100  # because it has to be in cents
+        response = self.invoice.validate_invoice_paybox(cr, uid, invoice.number, amount)
         self.assertEquals(response, invoice.id)
         self.assertEquals(self.invoice.browse(cr, uid, invoice.id).state, 'paid')
         self.assertRaises(osv.except_osv, self.invoice, 'validate_invoice_paybox',

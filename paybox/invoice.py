@@ -7,6 +7,13 @@ class Invoice(osv.Model):
 
     _inherit = 'account.invoice'
 
+    def get_invoice_id(self, cr, uid, ref, context=None):
+        """ search and return invoice id for the given reference """
+        invoice_ids = self.search(cr, uid, [('number', '=', ref)])
+        if not invoice_ids:
+            raise osv.except_osv(u"Action impossible", u"Facture %s non trouvée") % (ref)
+        return invoice_ids[0]
+
     def _portal_payment_block(self, cr, uid, ids, fieldname, arg, context=None):
         """ invoice residual amount is used instead of total amount """
         result = dict.fromkeys(ids, False)

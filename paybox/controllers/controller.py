@@ -15,6 +15,7 @@ pubkey = 'http://www1.paybox.com/wp-content/uploads/2014/03/pubkey.pem'
 
 
 class PayboxController(openerpweb.Controller):
+
     _cp_path = '/paybox'
 
     @openerpweb.httprequest
@@ -40,4 +41,17 @@ class PayboxController(openerpweb.Controller):
             return werkzeug.utils.redirect(url, 303)
         else:
             logger.info(u"Une erreur s'est produite, le paiement n'a pu être effectué")
-            return "<h2 style='color: red'> Une erreur s'est produite, le paiement n'a pu être effectué </h2>"
+            invoice_id = invoice.get_invoice_id(cr, SUPERUSER_ID, ref)
+            url = '#id=%s&view_type=form&model=account.invoice&menu_id=254&action=285' % (invoice_id)
+            return werkzeug.utils.redirect(url, 303)
+
+    @openerpweb.httprequest
+    def rejected(self, req, **kw):
+        params = req.params
+        ref, db = params['Ref'], params['db']
+        cr = pooler.get_db(db).cursor()
+        self.registry = RegistryManager.get(db)
+        invoice = self.registry.get('account.invoice')
+        invoice_id = invoice.get_invoice_id(cr, SUPERUSER_ID, ref)
+        url = '#id=%s&view_type=form&model=account.invoice&menu_id=254&action=285' % (invoice_id)
+        return werkzeug.utils.redirect(url, 303)
