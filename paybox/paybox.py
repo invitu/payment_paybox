@@ -2,6 +2,7 @@ from openerp.osv import osv
 import binascii
 import hashlib
 import hmac
+import urllib
 from urllib import quote as quote
 import logging
 from datetime import datetime
@@ -20,6 +21,9 @@ except ImportError:
 HASH = {'SHA512': hashlib.sha512}
 URL = [('Production', 'https://tpeweb.paybox.com'),
        ('Production (secours)', 'https://tpeweb1.paybox.com')]
+paiement_cgi = 'cgi/MYchoix_pagepaiement.cgi'
+load = 'load.htm'
+server_status_ok = '<div id="server_status" style="text-align:center;">OK</div>'
 
 
 class PayboxAcquirer(osv.Model):
@@ -32,6 +36,19 @@ class PayboxAcquirer(osv.Model):
             cr, uid, ids, context)
         return paybox_values
 
+    def check_paybox_url(self, cr, uid, url, context=None):
+        """ check if the server aimed is ok. The second url is used if problems are encountered"""
+        url_load = url+load
+        response = urllib.urlopen(url_load).read()
+        if server_status_ok not in response:
+            for prod_url in URL:
+                if url in prod_url:
+                    if URL.index(url) == 0:
+                        return URL[1][1]
+                    else:
+                        return URL[0][1]
+        return url
+
     def render_payment_block(self, cr, uid, object, reference, currency,
                              amount, context=None, **kwargs):
         """ Renders all visible payment acquirer forms for the given rendering context, and
@@ -41,8 +58,6 @@ class PayboxAcquirer(osv.Model):
         if not acquirer_ids:
             return
         html_forms = []
-        # add dbname in the invoice ref to get it back in the controller
-        # reference += '-'+cr.dbname
         for this in self.browse(cr, uid, acquirer_ids):
             # Paybox case
             acquirer = this.name
@@ -53,8 +68,8 @@ class PayboxAcquirer(osv.Model):
                 identifiant = paybox_values['shop_id']
                 rang, site = paybox_values['rank'], paybox_values['site']
                 porteur, _hash = paybox_values['porteur'], paybox_values['hash']
-                url = paybox_values['url'] + 'cgi/MYchoix_pagepaiement.cgi'
-                # the paybox amount is formated in cents so we need to convert
+                url = self.check_paybox_url(cr, uid, paybox_values['url']) + paiement_cgi
+                # the paybox amount need to be formated in cents so we convert it
                 amount = str(int(amount*100))
                 # these are test variables
                 devise = '978'
@@ -88,6 +103,7 @@ class PayboxAcquirer(osv.Model):
             cr, uid, html_block, amount, currency, acquirer=acquirer, context=context)
 
     def compute_hmac(self, key, hash_name, args):
+        """ compute hmac with key, hash and args given """
         binary_key = binascii.unhexlify(key)
         concat_args = args
         try:

@@ -16,7 +16,7 @@ class PayboxSettings(osv.Model):
                 'shop_id': fields.char('Shop id', size=9),
                 'key': fields.char('Key', password=True),
                 'porteur': fields.char('Porteur'),
-                'hash': fields.selection([('sha512', 'SHA512')], 'Hash'),
+                'hash': fields.selection([('SHA512', 'sha512')], 'Hash'),
                 'url': fields.selection(URL, 'URL d\'appel'),
                 }
 

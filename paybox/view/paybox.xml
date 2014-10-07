@@ -13,34 +13,27 @@
                         <button string="Cancel" type="object" name="cancel" class="oe_link"/>
                 </header>
                 <separator string="Paybox settings"/>
-                <div>
-                    <label for="key" string="Key"/>
+                <group string="Key">
                     <field name="key" class="oe_inline" password="True"/>
-                </div>
-                <div>
-                    <label for="shop_id" string="Shop id"/>
+                </group>
+                <group string="Identifiant">
                     <field name="shop_id" class="oe_inline"/>
-                </div>
-                <div>
-                    <label for="rank" string="Rank"/>
+                </group>
+                <group string="Rank">
                     <field name="rank" class="oe_inline"/>
-                </div>
-                <div>
-                    <label for="site" string="Site"/>
+                </group>
+                <group string="Site">
                     <field name="site" class="oe_inline"/>
-                </div>
-                <div>
-                    <label for="porteur" string="Porteur"/>
+                </group>
+                <group string="Mail porteur">
                     <field name="porteur" class="oe_inline"/>
-                </div>
-                <div>
-                    <label for="hash" string="Hash"/>
+                </group>
+                <group string="Hash">
                     <field name="hash" class="oe_inline"/>
-                </div>
-                <div>
-                    <label for="url" string="URL"/>
+                </group>
+                <group string="URL">
                     <field name="url" class="oe_inline"/>
-                </div>
+                </group>
             </form>
             </field>
         </record>
