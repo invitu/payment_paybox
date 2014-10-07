@@ -1,17 +1,22 @@
 from openerp.osv import osv, fields
 
+URL = [('Test pré-production', 'https://preprod-tpeweb.paybox.com/'),
+       ('Production', 'https://tpeweb.paybox.com'),
+       ('Production (secours)', 'https://tpeweb1.paybox.com')]
+
 
 class PayboxSettings(osv.Model):
 
     _inherit = 'res.config.settings'
     _name = 'paybox.settings'
 
-    _columns = {'site': fields.char('Site'),
-                'rank': fields.char('Rank'),
-                'shop_id': fields.char('Shop id'),
+    _columns = {'site': fields.char('Site', size=7),
+                'rank': fields.char('Rank', size=2),
+                'shop_id': fields.char('Shop id', size=9),
                 'key': fields.char('Key', password=True),
                 'porteur': fields.char('Porteur'),
                 'hash': fields.selection([('sha512', 'SHA512')], 'Hash'),
+                'url': fields.selection(URL, 'URL d\'appel'),
                 }
 
     def get_default_paybox_settings(self, cr, uid, ids, context=None):
@@ -22,8 +27,9 @@ class PayboxSettings(osv.Model):
         key = cfg_param.get_param(cr, uid, 'paybox.key') or ""
         porteur = cfg_param.get_param(cr, uid, 'paybox.porteur') or ""
         hashname = cfg_param.get_param(cr, uid, 'paybox.hash') or ""
+        url = cfg_param.get_param(cr, uid, 'paybox.url') or ""
         return {'site': site, 'rank': rank, 'shop_id': shop_id,
-                'key': key, 'porteur': porteur, 'hash': hashname}
+                'key': key, 'porteur': porteur, 'hash': hashname, 'url': url}
 
     def set_site(self, cr, uid, ids, context=None):
         for i in ids:
@@ -54,3 +60,8 @@ class PayboxSettings(osv.Model):
         for i in ids:
             hashname = self.browse(cr, uid, i, context)["hash"] or ""
             self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.hash", hashname)
+
+    def set_url(self, cr, uid, ids, context=None):
+        for i in ids:
+            url = self.browse(cr, uid, ids, context)["url"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.url", url)

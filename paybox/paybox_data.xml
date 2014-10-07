@@ -4,7 +4,7 @@
         <record id="paybox_acquirer" model="portal.payment.acquirer">
             <field name="name">Paybox</field>
             <field name="form_template"><![CDATA[
-<form method="POST" action="https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi">
+<form method="POST" action="${url}">
     <input type="hidden" name="PBX_SITE" value="1999888"/>
     <input type="hidden" name="PBX_RANG" value="32"/>
     <input type="hidden" name="PBX_HASH" value="SHA512"/>
