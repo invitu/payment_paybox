@@ -9,7 +9,10 @@ class PayboxSettings(osv.Model):
     _columns = {'site': fields.char('Site'),
                 'rank': fields.char('Rank'),
                 'shop_id': fields.char('Shop id'),
-                'key': fields.char('Key', password=True), }
+                'key': fields.char('Key', password=True),
+                'porteur': fields.char('Porteur'),
+                'hash': fields.selection([('sha512', 'SHA512')], 'Hash'),
+                }
 
     def get_default_paybox_settings(self, cr, uid, ids, context=None):
         cfg_param = self.pool.get('ir.config_parameter')
@@ -17,7 +20,10 @@ class PayboxSettings(osv.Model):
         rank = cfg_param.get_param(cr, uid, 'paybox.rank') or ""
         shop_id = cfg_param.get_param(cr, uid, 'paybox.shop_id') or ""
         key = cfg_param.get_param(cr, uid, 'paybox.key') or ""
-        return {'site': site, 'rank': rank, 'shop_id': shop_id, 'key': key}
+        porteur = cfg_param.get_param(cr, uid, 'paybox.porteur') or ""
+        hashname = cfg_param.get_param(cr, uid, 'paybox.hash') or ""
+        return {'site': site, 'rank': rank, 'shop_id': shop_id,
+                'key': key, 'porteur': porteur, 'hash': hashname}
 
     def set_site(self, cr, uid, ids, context=None):
         for i in ids:
@@ -38,3 +44,13 @@ class PayboxSettings(osv.Model):
         for i in ids:
             key = self.browse(cr, uid, i, context)["key"] or ""
             self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.key", key)
+
+    def set_porteur(self, cr, uid, ids, context=None):
+        for i in ids:
+            porteur = self.browse(cr, uid, i, context)["porteur"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.porteur", porteur)
+
+    def set_hash(self, cr, uid, ids, context=None):
+        for i in ids:
+            hashname = self.browse(cr, uid, i, context)["hash"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.hash", hashname)

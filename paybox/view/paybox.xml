@@ -29,6 +29,14 @@
                     <label for="site" string="Site"/>
                     <field name="site" class="oe_inline"/>
                 </div>
+                <div>
+                    <label for="porteur" string="Porteur"/>
+                    <field name="porteur" class="oe_inline"/>
+                </div>
+                <div>
+                    <label for="hash" string="Hash"/>
+                    <field name="hash" class="oe_inline"/>
+                </div>
             </form>
             </field>
         </record>

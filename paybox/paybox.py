@@ -24,6 +24,12 @@ class PayboxAcquirer(osv.Model):
 
     _inherit = 'portal.payment.acquirer'
 
+    def get_paybox_settings(self, cr, uid, ids, context=None):
+        """ return paybox settings values """
+        paybox_values = self.pool.get('ir.paybox.settings').get_default_paybox_settings(
+            cr, uid, ids, context)
+        return paybox_values
+
     def render_payment_block(self, cr, uid, object, reference, currency,
                              amount, context=None, **kwargs):
         """ Renders all visible payment acquirer forms for the given rendering context, and
@@ -39,17 +45,16 @@ class PayboxAcquirer(osv.Model):
             # Paybox case
             acquirer = this.name
             if acquirer == 'Paybox':
-                # The secret key, need to be stored somewhere else
-                key = '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF'
-                # The paybox amount is formated in cents so we need to convert
+                paybox_values = self.get_paybox_settings(cr, uid, None)
+                # values extracted from the paybox settings part
+                key = paybox_values['key']
+                identifiant = paybox_values['shop_id']
+                rang, site = paybox_values['rank'], paybox_values['site']
+                porteur, _hash = paybox_values['porteur'], paybox_values['hash']
+                # the paybox amount is formated in cents so we need to convert
                 amount = str(int(amount*100))
-                # These are test variables
+                # these are test variables
                 devise = '978'
-                _hash = 'SHA512'
-                identifiant = '110647233'
-                rang = '32'
-                site = '1999888'
-                porteur = 'test@paybox.com'
                 retour = 'Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K'
                 url_effectue = 'http://localhost:8069/paybox/?db=%s' % cr.dbname
                 url_annule = 'http://localhost:8069/paybox/annule/?db=%s' % cr.dbname
