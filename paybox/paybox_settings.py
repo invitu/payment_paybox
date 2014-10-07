@@ -1,8 +1,9 @@
+# coding: utf-8
 from openerp.osv import osv, fields
 
-URL = [('Test pré-production', 'https://preprod-tpeweb.paybox.com/'),
-       ('Production', 'https://tpeweb.paybox.com'),
-       ('Production (secours)', 'https://tpeweb1.paybox.com')]
+URL = [('https://preprod-tpeweb.paybox.com/', 'Test pré-production'),
+       ('https://tpeweb.paybox.com', 'Production'),
+       ('https://tpeweb1.paybox.com', 'Production (secours)')]
 
 
 class PayboxSettings(osv.Model):
@@ -63,5 +64,5 @@ class PayboxSettings(osv.Model):
 
     def set_url(self, cr, uid, ids, context=None):
         for i in ids:
-            url = self.browse(cr, uid, ids, context)["url"] or ""
+            url = self.browse(cr, uid, i, context)["url"] or ""
             self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.url", url)

@@ -37,6 +37,10 @@
                     <label for="hash" string="Hash"/>
                     <field name="hash" class="oe_inline"/>
                 </div>
+                <div>
+                    <label for="url" string="URL"/>
+                    <field name="url" class="oe_inline"/>
+                </div>
             </form>
             </field>
         </record>

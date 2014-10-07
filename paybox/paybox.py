@@ -28,7 +28,7 @@ class PayboxAcquirer(osv.Model):
 
     def get_paybox_settings(self, cr, uid, ids, context=None):
         """ return paybox settings values """
-        paybox_values = self.pool.get('ir.paybox.settings').get_default_paybox_settings(
+        paybox_values = self.pool.get('paybox.settings').get_default_paybox_settings(
             cr, uid, ids, context)
         return paybox_values
 
@@ -96,7 +96,7 @@ class PayboxAcquirer(osv.Model):
             return False
         return hmac_value
 
-    def render(self, cr, uid, id, object, reference, currency, amount, url,
+    def render(self, cr, uid, id, object, reference, currency, amount, url=None,
                identifiant=None, rang=None, site=None, time=None, devise=None, retour=None,
                effectue=None, annule=None, refuse=None, hmac=None,
                context=None, **kwargs):
