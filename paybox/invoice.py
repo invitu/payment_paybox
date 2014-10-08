@@ -54,6 +54,8 @@ class Invoice(osv.Model):
             cr, uid, [], partner_id, journal_id, montant,
             1, 'receipt', today, context=context)
         value = values['value']
+        if not value['line_cr_ids']:
+            raise osv.except_osv(u"Action impossible", u"Aucune ligne de dette n'a été trouvée")
         values.pop('value')
         values.update(account_id=account_id, name=name)
         values['line_cr_ids'] = [[5, False, False], [0, False, value['line_cr_ids'][0]]]
