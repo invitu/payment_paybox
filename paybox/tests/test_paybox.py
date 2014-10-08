@@ -18,6 +18,7 @@ class TestPaybox(TransactionCase):
         self.partner = self.registry('res.partner')
         self.product = self.registry('product.product')
         self.invoice_line = self.registry('account.invoice.line')
+        self.voucher = self.registry('account.voucher')
         self.sign = Signature()
 
     def test_remove_sign(self):
@@ -53,12 +54,9 @@ class TestPaybox(TransactionCase):
         response = self.invoice.validate_invoice_paybox(cr, SUPERUSER_ID, invoice.number, amount)
         self.assertEquals(response, invoice.id)
         invoice = self.invoice.browse(cr, uid, invoice_id)
-        # self.assertEquals(self.invoice.browse(cr, uid, invoice.id).state, 'paid')
+        self.assertTrue(self.invoice.test_paid(cr, uid, [invoice_id]))
         self.assertRaises(osv.except_osv, self.invoice.validate_invoice_paybox,
                           cr, uid, invoice.number, amount)
-
-    def test_create_voucher(self):
-        return True
 
     def test_compute_hmac(self):
         """ ensure that the hmac is well computed """
@@ -79,3 +77,5 @@ class TestPaybox(TransactionCase):
         key = open(key_path, 'r').read()
         res = self.sign.verify(signature, data, key)
         self.assertTrue(res)
+        res = self.sign.verify(signature, data.replace('Mt=35000', 'Mt=50000'), key)
+        self.assertFalse(res)
