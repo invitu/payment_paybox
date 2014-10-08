@@ -89,7 +89,7 @@ class PayboxAcquirer(osv.Model):
                         '&PBX_RUF1=' + 'POST' + '&PBX_REPONDRE_A=' + 'http://localhost:8069')
                 hmac = self.compute_hmac(key, _hash, args)
                 content = this.render(
-                    object, reference, devise, amount, hmac=hmac, url=url,
+                    object, reference, devise, amount, hmac=hmac, url=url, porteur=porteur,
                     identifiant=identifiant, rang=rang, site=site, time=time, devise=devise,
                     retour=retour, effectue=url_effectue, annule=url_annule,
                     refuse=url_refuse, context=context, **kwargs)
@@ -112,7 +112,7 @@ class PayboxAcquirer(osv.Model):
             return False
         return hmac_value
 
-    def render(self, cr, uid, id, object, reference, currency, amount, url=None,
+    def render(self, cr, uid, id, object, reference, currency, amount, url=None, porteur=None,
                identifiant=None, rang=None, site=None, time=None, devise=None, retour=None,
                effectue=None, annule=None, refuse=None, hmac=None,
                context=None, **kwargs):
@@ -126,8 +126,8 @@ class PayboxAcquirer(osv.Model):
             i18n_kind = _(object._description)  # may fail to translate, but at least we try
             if this.name == 'Paybox':
                 result = MakoTemplate(this.form_template).render_unicode(
-                    object=object, reference=reference, currency=currency,
-                    amount=amount, url=url, identifiant=identifiant, rang=rang, site=site,
+                    object=object, reference=reference, currency=currency, amount=amount,
+                    url=url, porteur=porteur, identifiant=identifiant, rang=rang, site=site,
                     effectue=effectue, annule=annule, refuse=refuse, time=time, devise=devise,
                     retour=retour, hmac=hmac, kind=i18n_kind, quote=quote, ctx=context,
                     format_exceptions=True)
@@ -142,7 +142,8 @@ class PayboxAcquirer(osv.Model):
                               this.name, this.form_template)
             return
 
-    def _wrap_payment_block(self, cr, uid, html_block, amount, currency, acquirer=None, context=None):
+    def _wrap_payment_block(self, cr, uid, html_block, amount,
+                            currency, acquirer=None, context=None):
         if not html_block:
             link = '#action=account.action_account_config'
             payment_header = _('You can finish the configuration in the <a href="%s">Bank&Cash settings</a>') % link

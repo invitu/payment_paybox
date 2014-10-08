@@ -5,14 +5,14 @@
             <field name="name">Paybox</field>
             <field name="form_template"><![CDATA[
 <form method="POST" action="${url}">
-    <input type="hidden" name="PBX_SITE" value="1999888"/>
-    <input type="hidden" name="PBX_RANG" value="32"/>
-    <input type="hidden" name="PBX_HASH" value="SHA512"/>
+    <input type="hidden" name="PBX_SITE" value="${site}"/>
+    <input type="hidden" name="PBX_RANG" value="${rank}"/>
+    <input type="hidden" name="PBX_HASH" value="${hash}"/>
     <input type="hidden" name="PBX_CMD" value="${reference}"/>
-    <input type="hidden" name="PBX_IDENTIFIANT" value="110647233"/>
+    <input type="hidden" name="PBX_IDENTIFIANT" value="${identifiant}"/>
     <input type="hidden" name="PBX_TOTAL" value="${amount}"/>
     <input type="hidden" name="PBX_DEVISE" value="${devise}"/>
-    <input type="hidden" name="PBX_PORTEUR" value="test@paybox.com"/>
+    <input type="hidden" name="PBX_PORTEUR" value="${porteur}"/>
     <input type="hidden" name="PBX_RETOUR" value="${retour}"/>
     <input type="hidden" name="PBX_TIME" value="${time}"/>
     <input type="hidden" name="PBX_EFFECTUE" value="${effectue}"/>
