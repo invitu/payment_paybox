@@ -22,4 +22,6 @@ class Signature():
     def remove_sign(self, msg):
         """ remove signature arg from the string given """
         pos = msg.find('&Signature')
+        if pos == -1:
+            return msg
         return msg[:pos]
