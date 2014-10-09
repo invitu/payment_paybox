@@ -62,6 +62,8 @@ class PayboxAcquirer(osv.Model):
             # Paybox case
             acquirer = this.name
             if acquirer == 'Paybox':
+                if object.payment_term:
+                    continue
                 paybox_values = self.get_paybox_settings(cr, uid, None)
                 # values extracted from the paybox settings part
                 key = paybox_values['key']
@@ -104,12 +106,15 @@ class PayboxAcquirer(osv.Model):
 
     def compute_hmac(self, key, hash_name, args):
         """ compute hmac with key, hash and args given """
-        binary_key = binascii.unhexlify(key)
+        try:
+            binary_key = binascii.unhexlify(key)
+        except:
+            raise osv.except_osv(u"Calcul HMAC impossible", u"Vérifiez la valeur de la clé")
         concat_args = args
         try:
             hmac_value = hmac.new(binary_key, concat_args, HASH[hash_name]).hexdigest().upper()
         except:
-            return False
+            raise osv.except_osv(u"Calcul HMAC impossible", u"Une erreur s'est produite")
         return hmac_value
 
     def render(self, cr, uid, id, object, reference, currency, amount, url=None, porteur=None,
