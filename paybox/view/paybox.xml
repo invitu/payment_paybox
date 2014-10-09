@@ -51,15 +51,5 @@
             parent="base.menu_config" name="Paybox"
             action="action_settings_paybox"/>
 
-        <!--<record model="ir.ui.view" id="invoice_paybox_form_payment">
-            <field name="name">account.invoice.paybox.form.payment</field>
-            <field name="model">account.invoice</field>
-            <field name="inherit_id" ref="portal_sale.invoice_form_payment"/>
-            <field name="arch" type="xml">
-                <xpath expr="//field[@name='portal_payment_options']" position="replace">
-                    <field name="portal_payment_options" groups="portal_sale.group_payment_options" attrs="{'invisible': [('payment_term', '!=', False)]}"/>
-                </xpath>
-            </field>
-        </record>-->
     </data>
 </openerp>

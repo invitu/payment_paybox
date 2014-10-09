@@ -63,11 +63,9 @@ class PayboxAcquirer(osv.Model):
             # Paybox case
             acquirer = this.name
             if acquirer == 'Paybox':
-                if object.payment_term:
-                    continue
                 paybox_values = self.get_paybox_settings(cr, uid, None)
                 # values extracted from the paybox settings part
-                key = paybox_values['key']
+                key = unicode(paybox_values['key'])
                 identifiant = paybox_values['shop_id']
                 rang, site = paybox_values['rank'], paybox_values['site']
                 porteur, _hash = paybox_values['porteur'], paybox_values['hash']
@@ -75,11 +73,11 @@ class PayboxAcquirer(osv.Model):
                 # the paybox amount need to be formated in cents so we convert it
                 amount = str(int(amount*100))
                 # these are test variables
-                devise = '978'
-                retour = 'Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K'
-                url_effectue = 'http://localhost:8069/paybox/?db=%s' % cr.dbname
-                url_annule = 'http://localhost:8069/paybox/annule/?db=%s' % cr.dbname
-                url_refuse = 'http://localhost:8069/paybox/refused/?db=%s' % cr.dbname
+                devise = u"978"
+                retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
+                url_effectue = u"http://localhost:8069/paybox/?db=%s" % cr.dbname
+                url_annule = u"http://localhost:8069/paybox/annule/?db=%s" % cr.dbname
+                url_refuse = u"http://localhost:8069/paybox/refused/?db=%s" % cr.dbname
                 time = str(datetime.now())
                 # We need to concatenate the args to compute the hmac
                 args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
@@ -92,9 +90,9 @@ class PayboxAcquirer(osv.Model):
                         '&PBX_RUF1=' + 'POST' + '&PBX_REPONDRE_A=' + 'http://localhost:8069')
                 hmac = self.compute_hmac(key, _hash, args)
                 content = this.render(
-                    object, reference, devise, amount, hmac=hmac, url=url, porteur=porteur,
-                    identifiant=identifiant, rang=rang, site=site, time=time, devise=devise,
-                    retour=retour, effectue=url_effectue, annule=url_annule,
+                    object, reference, devise, amount, hmac=hmac, url=url, hash=_hash,
+                    porteur=porteur, identifiant=identifiant, rank=rang, site=site, time=time,
+                    devise=devise, retour=retour, effectue=url_effectue, annule=url_annule,
                     refuse=url_refuse, context=context, **kwargs)
             else:
                 content = this.render(
@@ -118,9 +116,9 @@ class PayboxAcquirer(osv.Model):
             raise osv.except_osv(u"Calcul HMAC impossible", u"Une erreur s'est produite")
         return hmac_value
 
-    def render(self, cr, uid, id, object, reference, currency, amount, url=None, porteur=None,
-               identifiant=None, rang=None, site=None, time=None, devise=None, retour=None,
-               effectue=None, annule=None, refuse=None, hmac=None,
+    def render(self, cr, uid, id, object, reference, currency, amount, url=None, hash=None,
+               porteur=None, identifiant=None, rank=None, site=None, time=None, devise=None,
+               retour=None, effectue=None, annule=None, refuse=None, hmac=None,
                context=None, **kwargs):
         """ Renders the form template of the given acquirer as a mako template  """
         if not isinstance(id, (int, long)):
@@ -133,10 +131,10 @@ class PayboxAcquirer(osv.Model):
             if this.name == 'Paybox':
                 result = MakoTemplate(this.form_template).render_unicode(
                     object=object, reference=reference, currency=currency, amount=amount,
-                    url=url, porteur=porteur, identifiant=identifiant, rang=rang, site=site,
-                    effectue=effectue, annule=annule, refuse=refuse, time=time, devise=devise,
-                    retour=retour, hmac=hmac, kind=i18n_kind, quote=quote, ctx=context,
-                    format_exceptions=True)
+                    url=url, hash=hash, porteur=porteur, identifiant=identifiant, rank=rank,
+                    site=site, effectue=effectue, annule=annule, refuse=refuse, time=time,
+                    devise=devise, retour=retour, hmac=hmac, kind=i18n_kind, quote=quote,
+                    ctx=context, format_exceptions=True)
             else:
                 result = MakoTemplate(this.form_template).render_unicode(
                     object=object, reference=reference, currency=currency,
