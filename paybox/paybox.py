@@ -63,6 +63,9 @@ class PayboxAcquirer(osv.Model):
             # Paybox case
             acquirer = this.name
             if acquirer == 'Paybox':
+                # just to avoir rendering for non handled payment terms
+                if object.payment_term:
+                    continue
                 paybox_values = self.get_paybox_settings(cr, uid, None)
                 # values extracted from the paybox settings part
                 key = unicode(paybox_values['key'])
@@ -149,12 +152,15 @@ class PayboxAcquirer(osv.Model):
     def _wrap_payment_block(self, cr, uid, html_block, amount,
                             currency, acquirer=None, context=None):
         if not html_block:
-            link = '#action=account.action_account_config'
-            payment_header = _('You can finish the configuration in the <a href="%s">Bank&Cash settings</a>') % link
-            amount = _('No online payment acquirers configured')
-            group_ids = self.pool.get('res.users').browse(cr, uid, uid, context=context).groups_id
-            if any(group.is_portal for group in group_ids):
+            if acquirer and acquirer == 'Paybox':
                 return ''
+            else:
+                link = '#action=account.action_account_config'
+                payment_header = _('You can finish the configuration in the <a href="%s">Bank&Cash settings</a>') % link
+                amount = _('No online payment acquirers configured')
+                group_ids = self.pool.get('res.users').browse(cr, uid, uid, context=context).groups_id
+                if any(group.is_portal for group in group_ids):
+                    return ''
         else:
             payment_header = _('Pay safely online')
             currency_str = currency.symbol or currency.name
