@@ -33,6 +33,7 @@
         'base',
         'web',
         'portal',
+        'portal_sale',
     ],
     'data': [
         'paybox_data.xml',

@@ -31,8 +31,8 @@ class Invoice(osv.Model):
         voucher = self.pool.get('account.voucher')
         journal = self.pool.get('account.journal')
         account = self.pool.get('account.account')
-        bank_journal_id = journal.search(cr, uid, [('name', '=', 'Bank')])
-        bank_account_id = account.search(cr, uid, [('name', '=', 'Bank')])
+        bank_journal_id = journal.search(cr, uid, [('code', '=', 'BNK2')])
+        bank_account_id = account.search(cr, uid, [('code', '=', '512102')])
         if not bank_account_id:
             raise osv.except_osv(u"Action impossible",
                                  u"Le compte 'Bank' n'a pas été trouvé")
