@@ -57,7 +57,6 @@ AUTH_CODE = {
     }
 
 
-
 class PayboxController(openerpweb.Controller):
 
     _cp_path = '/paybox'
