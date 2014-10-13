@@ -89,6 +89,9 @@ class PayboxController(openerpweb.Controller):
         if 'Auto' not in params:
             cr.close()
             return "<h2> Transaction refusée </h2>"
+        if 'Signature' not in params:
+            cr.close()
+            return "<h2> Signature non présente, transaction refusée </h2>"
         error_msg = self.check_error_code(erreur)
         if error_msg:
             cr.close()
