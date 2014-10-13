@@ -56,6 +56,7 @@ class PayboxAcquirer(osv.Model):
             return them wrapped in an appropriate HTML block, ready for direct inclusion
             in an OpenERP v7 form view """
         acquirer_ids = self.search(cr, uid, [('visible', '=', True)])
+        db_args = "?db=%s" % (cr.dbname)
         if not acquirer_ids:
             return
         html_forms = []
@@ -73,15 +74,16 @@ class PayboxAcquirer(osv.Model):
                 rang, site = paybox_values['rank'], paybox_values['site']
                 porteur, _hash = paybox_values['porteur'], paybox_values['hash']
                 url = self.check_paybox_url(cr, uid, paybox_values['url']) + paiement_cgi
+                url_retour = paybox_values['retour']
                 # the paybox amount need to be formated in cents so we convert it
                 amount = str(int(amount*100))
                 # these are test variables
                 devise = u"978"
                 retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
-                url_effectue = u"http://localhost:8069/paybox/?db=%s" % cr.dbname
-                url_annule = u"http://localhost:8069/paybox/annule/?db=%s" % cr.dbname
-                url_refuse = u"http://localhost:8070/paybox/refused/?db=%s" % cr.dbname
-                url_ipn = 'http://localhost:8069/paybox/'
+                url_effectue = url_retour+db_args
+                url_annule = url_retour+'/cancelled/'+db_args
+                url_refuse = url_retour+'/refused/'+db_args
+                url_ipn = url_retour+'/ipn'+db_args
                 time = str(datetime.now())
                 # We need to concatenate the args to compute the hmac
                 args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
@@ -96,7 +98,8 @@ class PayboxAcquirer(osv.Model):
                 content = this.render(
                     object, reference, devise, amount, hmac=hmac, url=url, hash=_hash,
                     porteur=porteur, identifiant=identifiant, rank=rang, site=site, ipn=url_ipn,
-                    time=time, devise=devise, retour=retour, context=context, **kwargs)
+                    time=time, devise=devise, retour=retour, effectue=url_effectue,
+                    annule=url_annule, refuse=url_refuse, context=context, **kwargs)
             else:
                 content = this.render(
                     object, reference, currency, amount, context=context, **kwargs)
@@ -121,7 +124,8 @@ class PayboxAcquirer(osv.Model):
 
     def render(self, cr, uid, id, object, reference, currency, amount, url=None, hash=None,
                porteur=None, identifiant=None, rank=None, site=None, time=None, devise=None,
-               retour=None, hmac=None, ipn=None, context=None, **kwargs):
+               retour=None, effectue=None, annule=None, refuse=None,
+               hmac=None, ipn=None, context=None, **kwargs):
         """ Renders the form template of the given acquirer as a mako template  """
         if not isinstance(id, (int, long)):
             id = id[0]
@@ -134,7 +138,8 @@ class PayboxAcquirer(osv.Model):
                 result = MakoTemplate(this.form_template).render_unicode(
                     object=object, reference=reference, currency=currency, amount=amount,
                     url=url, hash=hash, porteur=porteur, identifiant=identifiant, rank=rank,
-                    site=site, time=time, devise=devise, retour=retour, hmac=hmac, ipn=ipn,
+                    site=site, effectue=effectue, annule=annule, refuse=refuse,
+                    time=time, devise=devise, retour=retour, hmac=hmac, ipn=ipn,
                     kind=i18n_kind, quote=quote, ctx=context, format_exceptions=True)
             else:
                 result = MakoTemplate(this.form_template).render_unicode(

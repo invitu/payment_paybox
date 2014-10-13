@@ -57,6 +57,7 @@ AUTH_CODE = {
     }
 
 
+
 class PayboxController(openerpweb.Controller):
 
     _cp_path = '/paybox'
@@ -109,6 +110,35 @@ class PayboxController(openerpweb.Controller):
             logger.info(u"Une erreur s'est produite, le paiement n'a pu être effectué")
             cr.close()
             return werkzeug.utils.redirect(url, 303)
+
+    @openerpweb.httprequest
+    def ipn(self, req, **kw):
+        msg = req.httprequest.environ['QUERY_STRING']
+        key = urllib.urlopen(pubkey).read()
+        params = req.params
+        ref, db, montant = params['Ref'], params['db'], params['Mt']
+        cr = pooler.get_db(db).cursor()
+        self.registry = RegistryManager.get(db)
+        invoice = self.registry.get("account.invoice")
+        erreur, signature = params['Erreur'], params['Signature']
+        if 'Auto' not in params:
+            cr.close()
+            return "<h2> Transaction refusée </h2>"
+        if 'Signature' not in params:
+            cr.close()
+            return "<h2> Signature non présente, transaction refusée </h2>"
+        error_msg = self.check_error_code(erreur)
+        if error_msg:
+            cr.close()
+            return error_msg
+        if not sign.verify(signature, msg, key):
+            cr.close()
+            raise osv.except_osv(u"Signature erronée", u"Le paiement ne peut-être enregistré")
+        if ref and montant and erreur in ERROR_SUCCESS:
+            logger.info(u"Paiement effectué avec succès")
+            invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
+            cr.commit()
+            cr.close()
 
     @openerpweb.httprequest
     def refused(self, req, **kw):

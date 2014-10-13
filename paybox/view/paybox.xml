@@ -34,8 +34,8 @@
                 <group string="URL Paybox">
                     <field name="url" class="oe_inline"/>
                 </group>
-                <group string="URL de Retour">
-                    <field name="url_retour" class="oe_inline"/>
+                <group string="URL Retour">
+                    <field name="retour" class="oe_inline"/>
                 </group>
             </form>
             </field>
