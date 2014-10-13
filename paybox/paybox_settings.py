@@ -11,13 +11,14 @@ class PayboxSettings(osv.Model):
     _inherit = 'res.config.settings'
     _name = 'paybox.settings'
 
-    _columns = {'site': fields.char('Site', size=7),
-                'rank': fields.char('Rank', size=2),
-                'shop_id': fields.char('Shop id', size=9),
-                'key': fields.char('Key', password=True),
-                'porteur': fields.char('Porteur'),
+    _columns = {'site': fields.char("Site", size=7),
+                'rank': fields.char("Rank", size=2),
+                'shop_id': fields.char("Shop id", size=9),
+                'key': fields.char("Key", password=True),
+                'porteur': fields.char("Porteur"),
                 'hash': fields.selection([('SHA512', 'sha512')], 'Hash'),
-                'url': fields.selection(URL, 'URL d\'appel'),
+                'url': fields.selection(URL, u"URL d'appel"),
+                'url_retour': fields.char("URL utilisée pour la redirection"),
                 }
 
     def get_default_paybox_settings(self, cr, uid, ids, context=None):
@@ -29,8 +30,15 @@ class PayboxSettings(osv.Model):
         porteur = cfg_param.get_param(cr, uid, 'paybox.porteur') or ""
         hashname = cfg_param.get_param(cr, uid, 'paybox.hash') or ""
         url = cfg_param.get_param(cr, uid, 'paybox.url') or ""
+        url_retour = cfg_param.get_param(cr, uid, 'paybox.url_retour') or ""
         return {'site': site, 'rank': rank, 'shop_id': shop_id,
-                'key': key, 'porteur': porteur, 'hash': hashname, 'url': url}
+                'key': key, 'porteur': porteur, 'hash': hashname, 'url': url,
+                'url_retour': url_retour}
+
+    def set_url_retour(self, cr, uid, ids, context=None):
+        for i in ids:
+            url_retour = self.browse(cr, uid, i, context)["url_retour"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "url_retour", url_retour)
 
     def set_site(self, cr, uid, ids, context=None):
         for i in ids:

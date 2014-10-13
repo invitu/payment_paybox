@@ -89,6 +89,8 @@ class PayboxAcquirer(osv.Model):
                         '&PBX_IDENTIFIANT=' + identifiant + '&PBX_TOTAL=' + amount +
                         '&PBX_DEVISE=' + devise + '&PBX_PORTEUR=' + porteur +
                         '&PBX_RETOUR=' + retour + '&PBX_TIME=' + time +
+                        '&PBX_EFFECTUE=' + url_effectue + '&PBX_REFUSE=' + url_refuse +
+                        '&PBX_ANNULE=' + url_annule +
                         '&PBX_RUF1=' + 'POST' + '&PBX_REPONDRE_A=' + url_ipn)
                 hmac = self.compute_hmac(key, _hash, args)
                 content = this.render(
