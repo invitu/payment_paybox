@@ -7,6 +7,17 @@ class Invoice(osv.Model):
 
     _inherit = 'account.invoice'
 
+    def get_credit_line(self, cr, uid, lines, montant, name, context=None):
+        """ return index of the right line """
+        invoice_number = name[7:]
+        for line in lines:
+            if not line['name'] == invoice_number:
+                continue
+            if not line['amount'] == montant:
+                continue
+            return lines.index(line)
+        return False
+
     def get_invoice_id(self, cr, uid, ref, context=None):
         """ search and return invoice id for the given reference """
         invoice_ids = self.search(cr, uid, [('number', '=', ref)])
@@ -54,11 +65,12 @@ class Invoice(osv.Model):
             cr, uid, [], partner_id, journal_id, montant,
             1, 'receipt', today, context=context)
         value = values['value']
-        if not value['line_cr_ids']:
+        line_index = self.get_credit_line(cr, uid, value['line_cr_ids'], montant, name)
+        if not line_index:
             raise osv.except_osv(u"Action impossible", u"Aucune ligne de dette n'a été trouvée")
         values.pop('value')
         values.update(account_id=account_id, name=name)
-        values['line_cr_ids'] = [[5, False, False], [0, False, value['line_cr_ids'][0]]]
+        values['line_cr_ids'] = [[5, False, False], [0, False, value['line_cr_ids'][line_index]]]
         voucher_id = voucher.create(cr, uid, values, context=context)
         return voucher_id
 
