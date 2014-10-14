@@ -15,8 +15,8 @@ class Invoice(osv.Model):
                 continue
             if not line['amount'] == montant:
                 continue
-            return lines.index(line)
-        return False
+            return True, lines.index(line)
+        return False, False
 
     def get_invoice_id(self, cr, uid, ref, context=None):
         """ search and return invoice id for the given reference """
@@ -65,8 +65,8 @@ class Invoice(osv.Model):
             cr, uid, [], partner_id, journal_id, montant,
             1, 'receipt', today, context=context)
         value = values['value']
-        line_index = self.get_credit_line(cr, uid, value['line_cr_ids'], montant, name)
-        if not line_index:
+        line, line_index = self.get_credit_line(cr, uid, value['line_cr_ids'], montant, name)
+        if not line:
             raise osv.except_osv(u"Action impossible", u"Aucune ligne de dette n'a été trouvée")
         values.pop('value')
         values.update(account_id=account_id, name=name)
