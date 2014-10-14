@@ -18,7 +18,7 @@ try:
 except ImportError:
     _logger.warning("Mako templates not available, payment acquirer will not work!")
 
-
+DEVISE = {'Euros': '978'}
 HASH = {'SHA512': hashlib.sha512}
 URL = [('Production', 'https://tpeweb.paybox.com'),
        ('Production (secours)', 'https://tpeweb1.paybox.com')]

@@ -76,6 +76,7 @@ class PayboxController(openerpweb.Controller):
 
     @openerpweb.httprequest
     def index(self, req, **kw):
+        logger.info(u"EFFECTUE")
         msg = req.httprequest.environ['QUERY_STRING']
         key = urllib.urlopen(pubkey).read()
         params = req.params
@@ -112,6 +113,7 @@ class PayboxController(openerpweb.Controller):
 
     @openerpweb.httprequest
     def ipn(self, req, **kw):
+        logger.info(u"IPN")
         msg = req.httprequest.environ['QUERY_STRING']
         key = urllib.urlopen(pubkey).read()
         params = req.params
@@ -141,6 +143,7 @@ class PayboxController(openerpweb.Controller):
 
     @openerpweb.httprequest
     def refused(self, req, **kw):
+        logger.info(u"REFUSE")
         params = req.params
         ref, db = params['Ref'], params['db']
         cr = pooler.get_db(db).cursor()
@@ -152,6 +155,7 @@ class PayboxController(openerpweb.Controller):
 
     @openerpweb.httprequest
     def cancelled(self, req, **kw):
+        logger.info(u"ANNULE")
         params = req.params
         ref, db = params['Ref'], params['db']
         cr = pooler.get_db(db).cursor()
