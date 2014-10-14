@@ -144,14 +144,8 @@ class PayboxController(openerpweb.Controller):
     @openerpweb.httprequest
     def refused(self, req, **kw):
         logger.info(u"REFUSE")
-        params = req.params
-        ref, db = params['Ref'], params['db']
-        cr = pooler.get_db(db).cursor()
-        self.registry = RegistryManager.get(db)
-        invoice = self.registry.get('account.invoice')
-        invoice_id = invoice.get_invoice_id(cr, SUPERUSER_ID, ref)
-        url = base_url % (invoice_id)
-        return werkzeug.utils.redirect(url, 303)
+        erreur = req.params['Erreur']
+        return self.check_error_code(erreur)
 
     @openerpweb.httprequest
     def cancelled(self, req, **kw):
@@ -163,4 +157,5 @@ class PayboxController(openerpweb.Controller):
         invoice = self.registry.get('account.invoice')
         invoice_id = invoice.get_invoice_id(cr, SUPERUSER_ID, ref)
         url = base_url % (invoice_id)
+        cr.close()
         return werkzeug.utils.redirect(url, 303)
