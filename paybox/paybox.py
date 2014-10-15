@@ -70,15 +70,14 @@ class PayboxAcquirer(osv.Model):
                 paybox_values = self.get_paybox_settings(cr, uid, None)
                 # values extracted from the paybox settings part
                 key = unicode(paybox_values['key'])
-                identifiant = paybox_values['shop_id']
+                identifiant, devise = paybox_values['shop_id'], paybox_values['devise']
                 rang, site = paybox_values['rank'], paybox_values['site']
                 porteur, _hash = paybox_values['porteur'], paybox_values['hash']
                 url = self.check_paybox_url(cr, uid, paybox_values['url']) + paiement_cgi
-                url_retour = paybox_values['retour']
+                url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
                 # the paybox amount need to be formated in cents so we convert it
                 amount = str(int(amount*100))
                 # these are test variables
-                devise = u"978"
                 retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
                 url_effectue = url_retour+db_args
                 url_annule = url_retour+'/cancelled/'+db_args
@@ -93,12 +92,12 @@ class PayboxAcquirer(osv.Model):
                         '&PBX_RETOUR=' + retour + '&PBX_TIME=' + time +
                         '&PBX_EFFECTUE=' + url_effectue + '&PBX_REFUSE=' + url_refuse +
                         '&PBX_ANNULE=' + url_annule +
-                        '&PBX_RUF1=' + 'POST' + '&PBX_REPONDRE_A=' + url_ipn)
+                        '&PBX_RUF1=' + ruf1 + '&PBX_REPONDRE_A=' + url_ipn)
                 hmac = self.compute_hmac(key, _hash, args)
                 content = this.render(
                     object, reference, devise, amount, hmac=hmac, url=url, hash=_hash,
                     porteur=porteur, identifiant=identifiant, rank=rang, site=site, ipn=url_ipn,
-                    time=time, devise=devise, retour=retour, effectue=url_effectue,
+                    time=time, devise=devise, retour=retour, effectue=url_effectue, ruf1=ruf1,
                     annule=url_annule, refuse=url_refuse, context=context, **kwargs)
             else:
                 content = this.render(
@@ -124,7 +123,7 @@ class PayboxAcquirer(osv.Model):
 
     def render(self, cr, uid, id, object, reference, currency, amount, url=None, hash=None,
                porteur=None, identifiant=None, rank=None, site=None, time=None, devise=None,
-               retour=None, effectue=None, annule=None, refuse=None,
+               retour=None, effectue=None, annule=None, refuse=None, ruf1=None,
                hmac=None, ipn=None, context=None, **kwargs):
         """ Renders the form template of the given acquirer as a mako template  """
         if not isinstance(id, (int, long)):
@@ -138,7 +137,7 @@ class PayboxAcquirer(osv.Model):
                 result = MakoTemplate(this.form_template).render_unicode(
                     object=object, reference=reference, currency=currency, amount=amount,
                     url=url, hash=hash, porteur=porteur, identifiant=identifiant, rank=rank,
-                    site=site, effectue=effectue, annule=annule, refuse=refuse,
+                    site=site, effectue=effectue, annule=annule, refuse=refuse, ruf1=ruf1,
                     time=time, devise=devise, retour=retour, hmac=hmac, ipn=ipn,
                     kind=i18n_kind, quote=quote, ctx=context, format_exceptions=True)
             else:

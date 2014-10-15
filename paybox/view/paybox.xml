@@ -14,28 +14,34 @@
                 </header>
                 <separator string="Paybox settings"/>
                 <group string="Key">
-                    <field name="key" class="oe_inline" password="True"/>
+                    <field name="key" class="oe_inline" password="True" required="True"/>
                 </group>
                 <group string="Identifiant">
-                    <field name="shop_id" class="oe_inline"/>
+                    <field name="shop_id" class="oe_inline" required="True"/>
                 </group>
                 <group string="Rank">
-                    <field name="rank" class="oe_inline"/>
+                    <field name="rank" class="oe_inline" required="True"/>
                 </group>
                 <group string="Site">
-                    <field name="site" class="oe_inline"/>
+                    <field name="site" class="oe_inline" required="True"/>
                 </group>
                 <group string="Mail porteur">
-                    <field name="porteur" class="oe_inline"/>
+                    <field name="porteur" class="oe_inline" required="True"/>
                 </group>
                 <group string="Hash">
-                    <field name="hash" class="oe_inline"/>
+                    <field name="hash" class="oe_inline" required="True"/>
                 </group>
                 <group string="URL Paybox">
-                    <field name="url" class="oe_inline"/>
+                    <field name="url" class="oe_inline" required="True"/>
                 </group>
                 <group string="URL Retour">
-                    <field name="retour" class="oe_inline"/>
+                    <field name="retour" class="oe_inline" required="True"/>
+                </group>
+                <group string="Devise">
+                    <field name="devise" class="oe_inline" required="True"/>
+                </group>
+                <group string="Méthode">
+                    <field name="method" class="oe_inline" required="True"/>
                 </group>
             </form>
             </field>

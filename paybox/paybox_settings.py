@@ -16,10 +16,18 @@ class PayboxSettings(osv.Model):
                 'shop_id': fields.char("Shop id", size=9),
                 'key': fields.char("Key", password=True),
                 'porteur': fields.char("Porteur"),
-                'hash': fields.selection([('SHA512', 'sha512')], 'Hash'),
+                'hash': fields.selection([('SHA512', 'sha512')], "Hash"),
                 'url': fields.selection(URL, u"URL d'appel"),
                 'retour': fields.char(u"URL utilisée pour la redirection"),
+                'method': fields.selection([('POST', 'Post'), ('GET', 'Get')], u"Méthode"),
+                'devise': fields.selection([('978', 'Euro'), ('840', 'US Dollar')], u"Devise"),
                 }
+
+    _defaults = {'hash': 'sha512',
+                 'url': 'Test pré-production',
+                 'method': 'Post',
+                 'devise': 'Euro',
+                 }
 
     def get_default_paybox_settings(self, cr, uid, ids, context=None):
         cfg_param = self.pool.get('ir.config_parameter')
@@ -31,9 +39,21 @@ class PayboxSettings(osv.Model):
         hashname = cfg_param.get_param(cr, uid, 'paybox.hash') or ""
         url = cfg_param.get_param(cr, uid, 'paybox.url') or ""
         retour = cfg_param.get_param(cr, uid, 'paybox.retour') or ""
+        method = cfg_param.get_param(cr, uid, 'paybox.method') or ""
+        devise = cfg_param.get_param(cr, uid, 'paybox.devise') or ""
         return {'site': site, 'rank': rank, 'shop_id': shop_id,
                 'key': key, 'porteur': porteur, 'hash': hashname, 'url': url,
-                'retour': retour}
+                'retour': retour, 'method': method, 'devise': devise}
+
+    def set_devise(self, cr, uid, ids, context=None):
+        for i in ids:
+            devise = self.browse(cr, uid, i, context)["devise"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.devise", devise)
+
+    def set_method(self, cr, uid, ids, context=None):
+        for i in ids:
+            method = self.browse(cr, uid, i, context)["method"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.method", method)
 
     def set_retour(self, cr, uid, ids, context=None):
         for i in ids:
