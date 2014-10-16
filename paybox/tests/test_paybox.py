@@ -2,6 +2,7 @@
 
 from openerp.tests.common import TransactionCase
 from ..paybox_signature import Signature
+from ..controllers.controller import PayboxController
 import os
 from openerp.osv import osv
 from openerp import SUPERUSER_ID
@@ -20,6 +21,16 @@ class TestPaybox(TransactionCase):
         self.invoice_line = self.registry('account.invoice.line')
         self.voucher = self.registry('account.voucher')
         self.sign = Signature()
+        self.controller = PayboxController()
+
+    def test_check_error_code(self):
+        """ ensure the check_error_code() method return the appropriate message """
+        check = self.controller.check_error_code('00029')
+        self.assertEquals(check, u"Carte non conforme")
+        check = self.controller.check_error_code('00115')
+        self.assertEquals(check, u"Emetteur de carte inconnu")
+        check = self.controller.check_error_code('00000')
+        self.assertFalse(check)
 
     def test_remove_sign(self):
         msg = 'db=test_db&Mt=35000&Ref=SAJ/000/000&Auto=XXXXXX&Erreur=00000'

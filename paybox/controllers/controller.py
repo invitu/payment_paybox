@@ -70,7 +70,7 @@ class PayboxController(openerpweb.Controller):
         else:
             for err in ERROR_CODE:
                 if erreur.startswith(err):
-                    error_msg = AUTH_CODE[err[:-2]]
+                    error_msg = AUTH_CODE[erreur[-2:]]
                     return error_msg
         return False
 
