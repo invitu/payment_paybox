@@ -66,12 +66,12 @@ class PayboxController(openerpweb.Controller):
             it also build the message that will be display to the customer """
         if erreur in ERROR_CODE:
             error_msg = ERROR_CODE[erreur]
-            return "<p><h2> %s </h2></p><p><a href='%s'>Retour au site</a></p>" % (error_msg, '/')
+            return error_msg
         else:
             for err in ERROR_CODE:
                 if erreur.startswith(err):
                     error_msg = AUTH_CODE[err[:-2]]
-                    return "<h2> %s </h2>" % (error_msg)
+                    return error_msg
         return False
 
     def compute_response(self, params, msg, verbose=None):
@@ -83,40 +83,56 @@ class PayboxController(openerpweb.Controller):
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
         invoice_id = invoice.get_invoice_id(cr, SUPERUSER_ID, ref)
-        url = base_url % (invoice_id)
         if 'Auto' not in params:
-            if not verbose:
-                cr.close()
-                return
+            invoice.message_post(
+                cr, SUPERUSER_ID, [invoice_id], u"Paramètre 'Auto' non trouvé",
+                u"Paiement refusé")
+            cr.commit()
+            cr.close()
+            return
         if 'Signature' not in params:
-            if not verbose:
-                cr.close()
-                return
+            invoice.message_post(
+                cr, SUPERUSER_ID, [invoice_id], u"Paramètre 'Signature' non trouvé",
+                u"Paiement refusé")
+            cr.commit()
+            cr.close()
+            return
         error_msg = self.check_error_code(erreur)
         if error_msg:
-            if not verbose:
-                cr.close()
-                return
+            invoice.message_post(
+                cr, SUPERUSER_ID, [invoice_id], u"Une erreur est survenue : %s " % (error_msg),
+                u"Paiement refusé")
+            cr.commit()
+            cr.close()
+            return
         if not sign.verify(signature, msg, key):
+            invoice.message_post(
+                cr, SUPERUSER_ID, [invoice_id], u"Signature incorrecte", u"Paiement refusé")
+            cr.commit()
             cr.close()
             return
         if ref and montant and erreur in ERROR_SUCCESS:
             if invoice.browse(cr, SUPERUSER_ID, invoice_id).state == 'paid':
-                return
-            if not verbose:
-                invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
+                invoice.message_post(
+                    cr, SUPERUSER_ID, [invoice_id], u"Facture déjà payée",
+                    u"Paiement non pris en compte")
+                cr.commit()
                 cr.close()
                 return
             invoice_id = invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
+            invoice.message_post(
+                cr, SUPERUSER_ID, [invoice_id], u"Montant : %s" % (float(int(montant)/100)),
+                u"Paiement accepté")
             cr.commit()
             cr.close()
-            return werkzeug.utils.redirect(url, 303)
         else:
             logger.info(u"Une erreur s'est produite, le paiement n'a pu être effectué")
+            invoice.message_post(
+                cr, SUPERUSER_ID, [invoice_id], u"Une erreur est survenue",
+                u"Paiement refusé")
+            cr.commit()
             cr.close()
-            if not verbose:
-                return
-            return werkzeug.utils.redirect(url, 303)
+            return
 
     @openerpweb.httprequest
     def index(self, req, **kw):
