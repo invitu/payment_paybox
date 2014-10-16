@@ -16,17 +16,19 @@ class PayboxSettings(osv.Model):
                 'shop_id': fields.char("Shop id", size=9),
                 'key': fields.char("Key", password=True),
                 'porteur': fields.char("Porteur"),
-                'hash': fields.selection([('SHA512', 'sha512')], "Hash"),
-                'url': fields.selection(URL, u"URL d'appel"),
+                'hash': fields.selection([('SHA512', 'sha512')], "Hash", select=True),
+                'url': fields.selection(URL, u"URL d'appel", select=True),
                 'retour': fields.char(u"URL utilisée pour la redirection"),
-                'method': fields.selection([('POST', 'Post'), ('GET', 'Get')], u"Méthode"),
-                'devise': fields.selection([('978', 'Euro'), ('840', 'US Dollar')], u"Devise"),
+                'method': fields.selection([('POST', 'Post'), ('GET', 'Get')], u"Méthode",
+                                           select=True),
+                'devise': fields.selection([('978', 'Euro'), ('840', 'US Dollar')], u"Devise",
+                                           select=True),
                 }
 
-    _defaults = {'hash': 'sha512',
-                 'url': 'Test pré-production',
-                 'method': 'Post',
-                 'devise': 'Euro',
+    _defaults = {'hash': 'SHA512',
+                 'url': 'https://preprod-tpeweb.paybox.com/',
+                 'method': 'POST',
+                 'devise': '978',
                  }
 
     def get_default_paybox_settings(self, cr, uid, ids, context=None):

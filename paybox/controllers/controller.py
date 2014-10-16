@@ -74,34 +74,39 @@ class PayboxController(openerpweb.Controller):
                     return "<h2> %s </h2>" % (error_msg)
         return False
 
-    @openerpweb.httprequest
-    def index(self, req, **kw):
-        logger.info(u"EFFECTUE")
-        msg = req.httprequest.environ['QUERY_STRING']
-        key = urllib.urlopen(pubkey).read()
-        params = req.params
+    def compute_response(self, params, msg, verbose=None):
+        """ check response and do what we are supposed to do """
         ref, db, montant = params['Ref'], params['db'], params['Mt']
+        erreur, signature = params['Erreur'], params['Signature']
+        key = urllib.urlopen(pubkey).read()
         cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
-        erreur, signature = params['Erreur'], params['Signature']
         invoice_id = invoice.get_invoice_id(cr, SUPERUSER_ID, ref)
         url = base_url % (invoice_id)
         if 'Auto' not in params:
-            cr.close()
-            return "<h2> Transaction refusée </h2>"
+            if not verbose:
+                cr.close()
+                return
         if 'Signature' not in params:
-            cr.close()
-            return "<h2> Signature non présente, transaction refusée </h2>"
+            if not verbose:
+                cr.close()
+                return
         error_msg = self.check_error_code(erreur)
         if error_msg:
-            cr.close()
-            return error_msg
+            if not verbose:
+                cr.close()
+                return
         if not sign.verify(signature, msg, key):
             cr.close()
-            raise osv.except_osv(u"Signature erronée", u"Le paiement ne peut-être enregistré")
+            return
         if ref and montant and erreur in ERROR_SUCCESS:
-            logger.info(u"Paiement effectué avec succès")
+            if invoice.browse(cr, SUPERUSER_ID, invoice_id).state == 'paid':
+                return
+            if not verbose:
+                invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
+                cr.close()
+                return
             invoice_id = invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
             cr.commit()
             cr.close()
@@ -109,37 +114,21 @@ class PayboxController(openerpweb.Controller):
         else:
             logger.info(u"Une erreur s'est produite, le paiement n'a pu être effectué")
             cr.close()
+            if not verbose:
+                return
             return werkzeug.utils.redirect(url, 303)
+
+    @openerpweb.httprequest
+    def index(self, req, **kw):
+        logger.info(u"EFFECTUE")
+        msg = req.httprequest.environ['QUERY_STRING']
+        return self.compute_response(req.params, msg, verbose=True)
 
     @openerpweb.httprequest
     def ipn(self, req, **kw):
         logger.info(u"IPN")
         msg = req.httprequest.environ['QUERY_STRING']
-        key = urllib.urlopen(pubkey).read()
-        params = req.params
-        ref, db, montant = params['Ref'], params['db'], params['Mt']
-        cr = pooler.get_db(db).cursor()
-        self.registry = RegistryManager.get(db)
-        invoice = self.registry.get("account.invoice")
-        erreur, signature = params['Erreur'], params['Signature']
-        if 'Auto' not in params:
-            cr.close()
-            return "<h2> Transaction refusée </h2>"
-        if 'Signature' not in params:
-            cr.close()
-            return "<h2> Signature non présente, transaction refusée </h2>"
-        error_msg = self.check_error_code(erreur)
-        if error_msg:
-            cr.close()
-            return error_msg
-        if not sign.verify(signature, msg, key):
-            cr.close()
-            raise osv.except_osv(u"Signature erronée", u"Le paiement ne peut-être enregistré")
-        if ref and montant and erreur in ERROR_SUCCESS:
-            logger.info(u"Paiement effectué avec succès")
-            invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
-            cr.commit()
-            cr.close()
+        return self.compute_response(req.params, msg, verbose=False)
 
     @openerpweb.httprequest
     def refused(self, req, **kw):
