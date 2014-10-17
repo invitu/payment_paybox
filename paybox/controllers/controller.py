@@ -190,11 +190,11 @@ class PayboxController(openerpweb.Controller):
     @openerpweb.httprequest
     def refused(self, req, **kw):
         logger.info(u"REFUSE")
-        invoice_id = self.get_invoice_id(req.params['db'], req.params['ref'])
+        invoice_id = self.get_invoice_id(req.params['db'], req.params['Ref'])
         return werkzeug.utils.redirect(self.get_invoice_url(invoice_id), 303)
 
     @openerpweb.httprequest
     def cancelled(self, req, **kw):
         logger.info(u"ANNULE")
-        invoice_id = self.get_invoice_id(req.params['db'], req.params['ref'])
+        invoice_id = self.get_invoice_id(req.params['db'], req.params['Ref'])
         return werkzeug.utils.redirect(self.get_invoice_url(invoice_id), 303)
