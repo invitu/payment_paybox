@@ -23,6 +23,35 @@ class TestPaybox(TransactionCase):
         self.sign = Signature()
         self.controller = PayboxController()
 
+    def test_compute_response(self):
+        """ """
+        cr, uid, context = self.cr, self.uid, {}
+        product_account_id = self.account.search(cr, uid, [('code', '=', '707100')])[0]
+        sale_journal = self.journal.search(cr, uid, [('code', '=', 'SAJ')])[0]
+        company_id = 1
+        partner = self.partner.create(cr, uid, {'name': 'test'})
+        product_id = self.product.search(
+            cr, uid, [('name_template', '=', 'Adhésion')])[0]
+        acc = self.account.search(cr, uid, [('code', '=', '411100')])[0]
+        datas = {'number': 'Facture', 'account_id': acc,
+                 'partner_id': partner, 'journal_id': sale_journal, 'payment_term': None}
+        context['active_ids'] = [partner]
+        invoice_id = self.invoice.create(cr, uid, datas)
+        self.invoice_line.create(
+            cr, uid, {'account_id': product_account_id, 'name': 'Adhésion',
+                      'invoice_id': invoice_id, 'price_unit': '100',
+                      'price_subtotal': '100', 'company_id': company_id, 'discount': False,
+                      'quantity': '1', 'partner_id': partner, 'product_id': product_id}, context)
+        self.invoice.action_move_create(cr, uid, [invoice_id])
+        self.invoice.invoice_validate(cr, uid, [invoice_id])
+        invoice_browse = self.invoice.browse(cr, uid, invoice_id)
+        cr.commit()
+        params = {'Ref': invoice_browse.number, 'Montant': '10000', 'db': cr.dbname}
+        response = self.controller.compute_response(params, 'Test Paybox')
+        self.assertEquals(
+            response,
+            '#id=%s&view_type=form&model=account.invoice&menu_id=254&action=285' % (invoice_id))
+
     def test_check_error_code(self):
         """ ensure the check_error_code() method return the appropriate message """
         check = self.controller.check_error_code('00029')
