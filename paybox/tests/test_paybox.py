@@ -106,6 +106,8 @@ class TestPaybox(TransactionCase):
         hash_name = 'SHA512'
         hmac = self.acquirer.compute_hmac(key, hash_name, args)
         self.assertEquals(hmac, '77C0800DF057BC78AA59879DE918168F59759A5F876B00447ABF5C7555A30BF1AFE0ACAD7D33B33415225AA4B5749005F89A05F130CF6D8D7677B77D1DB35A80')
+        hash_128 = 'SHA128'
+        self.assertRaises(osv.except_osv, self.acquirer.compute_hmac, key, hash_128, args)
 
     def test_verify_signature(self):
         """ verify the signature according to datas and public key """

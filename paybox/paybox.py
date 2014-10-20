@@ -63,7 +63,6 @@ class PayboxAcquirer(osv.Model):
         url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
         # the paybox amount need to be formated in cents so we convert it
         amount = str(int(amount*100))
-        # these are test variables
         retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
         url_effectue = url_retour+db_args
         url_annule = url_retour+'/cancelled/'+db_args
@@ -98,7 +97,7 @@ class PayboxAcquirer(osv.Model):
             # Paybox case
             acquirer = this.name
             if acquirer == 'Paybox':
-                # just to avoir rendering for non handled payment terms
+                # just to avoid rendering for non handled payment terms
                 if object.payment_term:
                     continue
                 vals = self.build_paybox_args(
