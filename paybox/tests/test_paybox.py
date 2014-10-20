@@ -95,6 +95,7 @@ class TestPaybox(TransactionCase):
         self.assertEquals(response, invoice.id)
         invoice = self.invoice.browse(cr, uid, invoice_id)
         self.assertTrue(self.invoice.test_paid(cr, uid, [invoice_id]))
+        self.assertTrue(invoice.state, 'paid')
         self.assertRaises(osv.except_osv, self.invoice.validate_invoice_paybox,
                           cr, uid, invoice.number, amount)
 
