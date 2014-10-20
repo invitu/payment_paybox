@@ -50,13 +50,47 @@ class PayboxAcquirer(osv.Model):
                         return URL[0][1]
         return url
 
+    def build_paybox_args(self, cr, uid, reference, currency, amount, context=None):
+        """ return args needed to fill paybox form """
+        db_args = "?db=%s" % (cr.dbname)
+        paybox_values = self.get_paybox_settings(cr, uid, None)
+        # values extracted from the paybox settings part
+        key = unicode(paybox_values['key'])
+        identifiant, devise = paybox_values['shop_id'], paybox_values['devise']
+        rang, site = paybox_values['rank'], paybox_values['site']
+        porteur, _hash = paybox_values['porteur'], paybox_values['hash']
+        url = self.check_paybox_url(cr, uid, paybox_values['url']) + paiement_cgi
+        url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
+        # the paybox amount need to be formated in cents so we convert it
+        amount = str(int(amount*100))
+        # these are test variables
+        retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
+        url_effectue = url_retour+db_args
+        url_annule = url_retour+'/cancelled/'+db_args
+        url_refuse = url_retour+'/refused/'+db_args
+        url_ipn = url_retour+'/ipn/'+db_args
+        time = str(datetime.now())
+        # We need to concatenate the args to compute the hmac
+        args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
+                '&PBX_HASH=' + _hash + '&PBX_CMD=' + reference +
+                '&PBX_IDENTIFIANT=' + identifiant + '&PBX_TOTAL=' + amount +
+                '&PBX_DEVISE=' + devise + '&PBX_PORTEUR=' + porteur +
+                '&PBX_RETOUR=' + retour + '&PBX_TIME=' + time +
+                '&PBX_EFFECTUE=' + url_effectue + '&PBX_REFUSE=' + url_refuse +
+                '&PBX_ANNULE=' + url_annule +
+                '&PBX_RUF1=' + ruf1 + '&PBX_REPONDRE_A=' + url_ipn)
+        hmac = self.compute_hmac(key, _hash, args)
+        return dict(hmac=hmac, hash=_hash, porteur=porteur, url=url, identifiant=identifiant,
+                    rank=rang, site=site, url_ipn=url_ipn, refuse=url_refuse, time=time,
+                    devise=devise, retour=retour, ruf1=ruf1, annule=url_annule, amount=amount,
+                    effectue=url_effectue)
+
     def render_payment_block(self, cr, uid, object, reference, currency,
                              amount, context=None, **kwargs):
         """ Renders all visible payment acquirer forms for the given rendering context, and
             return them wrapped in an appropriate HTML block, ready for direct inclusion
             in an OpenERP v7 form view """
         acquirer_ids = self.search(cr, uid, [('visible', '=', True)])
-        db_args = "?db=%s" % (cr.dbname)
         if not acquirer_ids:
             return
         html_forms = []
@@ -67,38 +101,15 @@ class PayboxAcquirer(osv.Model):
                 # just to avoir rendering for non handled payment terms
                 if object.payment_term:
                     continue
-                paybox_values = self.get_paybox_settings(cr, uid, None)
-                # values extracted from the paybox settings part
-                key = unicode(paybox_values['key'])
-                identifiant, devise = paybox_values['shop_id'], paybox_values['devise']
-                rang, site = paybox_values['rank'], paybox_values['site']
-                porteur, _hash = paybox_values['porteur'], paybox_values['hash']
-                url = self.check_paybox_url(cr, uid, paybox_values['url']) + paiement_cgi
-                url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
-                # the paybox amount need to be formated in cents so we convert it
-                amount = str(int(amount*100))
-                # these are test variables
-                retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
-                url_effectue = url_retour+db_args
-                url_annule = url_retour+'/cancelled/'+db_args
-                url_refuse = url_retour+'/refused/'+db_args
-                url_ipn = url_retour+'/ipn/'+db_args
-                time = str(datetime.now())
-                # We need to concatenate the args to compute the hmac
-                args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
-                        '&PBX_HASH=' + _hash + '&PBX_CMD=' + reference +
-                        '&PBX_IDENTIFIANT=' + identifiant + '&PBX_TOTAL=' + amount +
-                        '&PBX_DEVISE=' + devise + '&PBX_PORTEUR=' + porteur +
-                        '&PBX_RETOUR=' + retour + '&PBX_TIME=' + time +
-                        '&PBX_EFFECTUE=' + url_effectue + '&PBX_REFUSE=' + url_refuse +
-                        '&PBX_ANNULE=' + url_annule +
-                        '&PBX_RUF1=' + ruf1 + '&PBX_REPONDRE_A=' + url_ipn)
-                hmac = self.compute_hmac(key, _hash, args)
+                vals = self.build_paybox_args(
+                    cr, uid, reference, currency, amount, context=context)
                 content = this.render(
-                    object, reference, devise, amount, hmac=hmac, url=url, hash=_hash,
-                    porteur=porteur, identifiant=identifiant, rank=rang, site=site, ipn=url_ipn,
-                    time=time, devise=devise, retour=retour, effectue=url_effectue, ruf1=ruf1,
-                    annule=url_annule, refuse=url_refuse, context=context, **kwargs)
+                    object, reference, vals['devise'], vals['amount'], hmac=vals['hmac'],
+                    url=vals['url'], hash=vals['hash'], porteur=vals['porteur'],
+                    identifiant=vals['identifiant'], rank=vals['rank'], site=vals['site'],
+                    ipn=vals['url_ipn'], time=vals['time'], devise=vals['devise'],
+                    retour=vals['retour'], effectue=vals['effectue'], ruf1=vals['ruf1'],
+                    annule=vals['annule'], refuse=vals['refuse'], context=context, **kwargs)
             else:
                 content = this.render(
                     object, reference, currency, amount, context=context, **kwargs)
@@ -168,7 +179,7 @@ class PayboxAcquirer(osv.Model):
             currency_str = currency.symbol or currency.name
             if acquirer and acquirer == 'Paybox':
                 amount_str = float_repr(
-                    (float(amount)/100),
+                    amount,
                     self.pool.get('decimal.precision').precision_get(cr, uid, 'Account'))
                 amount = u"%s %s" % ((currency_str, amount_str) if currency.position == 'before' else (amount_str, currency_str))
             else:
