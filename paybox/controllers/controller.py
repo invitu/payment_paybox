@@ -71,7 +71,7 @@ class PayboxController(openerpweb.Controller):
         return resp
 
     def get_invoice_state(self, db, invoice_id):
-        """ return the state of the given invoice id """
+        """ return state of the given invoice id """
         cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
@@ -125,52 +125,47 @@ class PayboxController(openerpweb.Controller):
         url = self.get_invoice_url(invoice_id)
         if 'Erreur' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paramètre 'Erreur' non trouvé",
-                u"Paiement refusé")
+                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Erreur' non trouvé")
             return url
         if 'Auto' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paramètre 'Auto' non trouvé",
-                u"Paiement refusé")
+                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Auto' non trouvé")
             return url
         if 'Signature' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paramètre 'Signature' non trouvé",
-                u"Paiement refusé")
+                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Signature' non trouvé")
             return url
         if 'Mt' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paramètre 'Mt' non trouvé",
-                u"Paiement refusé")
+                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Mt' non trouvé")
             return url
         montant = params['Mt']
         erreur, signature = params['Erreur'], params['Signature']
         error_msg = self.check_error_code(erreur)
         if error_msg:
             self.invoice_message_post(
-                db, [invoice_id], u"Une erreur est survenue : %s " % (error_msg),
-                u"Paiement refusé")
+                db, [invoice_id], u"Paiement annulé ou refusé",
+                u"Une erreur est survenue : %s" % (error_msg))
             return url
         if not sign.verify(signature, msg, key):
             self.invoice_message_post(
-                db, [invoice_id], u"Signature incorrecte", u"Paiement refusé")
+                db, [invoice_id], u"Paiement refusé", u"Signature non vérifiée")
             return url
         if ref and montant and erreur in ERROR_SUCCESS:
             if self.get_invoice_state(db, invoice_id) == 'paid':
                 self.invoice_message_post(
                     db, [invoice_id], u"Facture déjà payée",
-                    u"Paiement non pris en compte")
+                    u"Paiement en ligne non pris en compte")
                 return url
             invoice_id = self.validate_invoice(db, ref, montant)
             self.invoice_message_post(
-                db, [invoice_id], u"Montant : %s" % (float(int(montant)/100)),
-                u"Paiement accepté")
+                db, [invoice_id], u"Paiement en ligne accepté",
+                u"Montant : %s" % (float(int(montant)/100)))
             return url
         else:
             logger.info(u"Une erreur s'est produite, le paiement n'a pu être effectué")
             self.invoice_message_post(
-                db, [invoice_id], u"Une erreur est survenue",
-                u"Paiement refusé")
+                db, [invoice_id], u"Paiement refusé", u"Une erreur est survenue")
             return url
 
     @openerpweb.httprequest
@@ -185,7 +180,7 @@ class PayboxController(openerpweb.Controller):
         logger.info(u"IPN")
         msg = req.httprequest.environ['QUERY_STRING']
         self.compute_response(req.params, msg)
-        return
+        return ""
 
     @openerpweb.httprequest
     def refused(self, req, **kw):
