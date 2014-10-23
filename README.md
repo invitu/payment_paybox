@@ -1,5 +1,6 @@
 # ANYBOX_PAYBOX #
 
+
 This module adds a new payment acquirer : Paybox. Just like PayPal, it adds a html form in the invoice form view but there is no specific email template created for Paybox.  
 
 ### Setup ###
