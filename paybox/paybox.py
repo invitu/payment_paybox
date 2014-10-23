@@ -45,7 +45,10 @@ class PayboxAcquirer(osv.Model):
         except:
             _logger.error(u""" Vérification échouée, l'URL semble non accessible.
 Vérifiez votre connectivité """)
-            return False
+            raise osv.except_osv(
+                u"L'url du serveur Paybox semble inaccessible",
+                u"Vérifiez l'état de votre connection")
+
         if server_status_ok not in response:
             for prod_url in URL:
                 if url in prod_url:
@@ -61,15 +64,15 @@ Vérifiez votre connectivité """)
         paybox_values = self.get_paybox_settings(cr, uid, None)
         for value in paybox_values:
             if not value:
-                return False
+                raise osv.except_osv(
+                    u"Génération du formulaire Paybox impossible",
+                    u"Tous les champs de configuration doivent être renseignés")
         # values extracted from the paybox settings part
         key = unicode(paybox_values['key'])
         identifiant, devise = paybox_values['shop_id'], paybox_values['devise']
         rang, site = paybox_values['rank'], paybox_values['site']
         porteur, _hash = paybox_values['porteur'], paybox_values['hash']
         url = self.check_paybox_url(cr, uid, paybox_values['url'])
-        if not url:
-            return False
         url += paiement_cgi
         url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
         # the paybox amount need to be formated in cents so we convert it
