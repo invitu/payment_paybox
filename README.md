@@ -1,0 +1,23 @@
+ANYBOX_PAYBOX
+
+### What is this repository for? ###
+
+This module adds a new payment acquirer : Paybox. Just like PayPal, it adds a html form in the invoice form view but there is no specific email template created for Paybox.  
+
+### Setup ###
+
+To use this module, you just have to add it. Once the module is installed, you need to configure it. Reach the Paybox settings part located in the Settings menu, fill the fields and apply changes.
+
+If you do not use Portal module yet, you might have to configure the payment acquirers and some other stuff. Don't forget to set Paybox acquirer to visible.  
+
+
+### Contribution guidelines ###
+
+* Writing tests
+* Code review
+* Other guidelines
+
+### Who do I talk to? ###
+
+* Repo owner or admin
+* Other community or team contact
