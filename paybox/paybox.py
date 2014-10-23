@@ -40,7 +40,12 @@ class PayboxAcquirer(osv.Model):
     def check_paybox_url(self, cr, uid, url, context=None):
         """ check if the server aimed is ok. The second url is used if problems are encountered"""
         url_load = url+load
-        response = urllib.urlopen(url_load).read()
+        try:
+            response = urllib.urlopen(url_load).read()
+        except:
+            _logger.error(u""" Vérification échouée, l'URL semble non accessible.
+Vérifiez votre connectivité """)
+            return False
         if server_status_ok not in response:
             for prod_url in URL:
                 if url in prod_url:
@@ -54,12 +59,18 @@ class PayboxAcquirer(osv.Model):
         """ return args needed to fill paybox form """
         db_args = "?db=%s" % (cr.dbname)
         paybox_values = self.get_paybox_settings(cr, uid, None)
+        for value in paybox_values:
+            if not value:
+                return False
         # values extracted from the paybox settings part
         key = unicode(paybox_values['key'])
         identifiant, devise = paybox_values['shop_id'], paybox_values['devise']
         rang, site = paybox_values['rank'], paybox_values['site']
         porteur, _hash = paybox_values['porteur'], paybox_values['hash']
-        url = self.check_paybox_url(cr, uid, paybox_values['url']) + paiement_cgi
+        url = self.check_paybox_url(cr, uid, paybox_values['url'])
+        if not url:
+            return False
+        url += paiement_cgi
         url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
         # the paybox amount need to be formated in cents so we convert it
         amount = str(int(amount*100))
@@ -102,6 +113,10 @@ class PayboxAcquirer(osv.Model):
                     continue
                 vals = self.build_paybox_args(
                     cr, uid, reference, currency, amount, context=context)
+                if not vals:
+                    _logger.warning(u""" Génération formulaire Paybox impossible.
+Données insuffisantes """)
+                    continue
                 content = this.render(
                     object, reference, vals['devise'], vals['amount'], hmac=vals['hmac'],
                     url=vals['url'], hash=vals['hash'], porteur=vals['porteur'],
@@ -123,11 +138,13 @@ class PayboxAcquirer(osv.Model):
         try:
             binary_key = binascii.unhexlify(key)
         except:
+            # We may just log this error and not raise exception
             raise osv.except_osv(u"Calcul HMAC impossible", u"Vérifiez la valeur de la clé")
         concat_args = args
         try:
             hmac_value = hmac.new(binary_key, concat_args, HASH[hash_name]).hexdigest().upper()
         except:
+            # We may just log this error and not raise exception
             raise osv.except_osv(u"Calcul HMAC impossible", u"Une erreur s'est produite")
         return hmac_value
 
@@ -168,9 +185,11 @@ class PayboxAcquirer(osv.Model):
                 return ''
             else:
                 link = '#action=account.action_account_config'
-                payment_header = _('You can finish the configuration in the <a href="%s">Bank&Cash settings</a>') % link
+                payment_header = _(""" You can finish the configuration in the
+<a href="%s">Bank&Cash settings</a>""") % link
                 amount = _('No online payment acquirers configured')
-                group_ids = self.pool.get('res.users').browse(cr, uid, uid, context=context).groups_id
+                group_ids = self.pool.get('res.users').browse(
+                    cr, uid, uid, context=context).groups_id
                 if any(group.is_portal for group in group_ids):
                     return ''
         else:
@@ -180,11 +199,13 @@ class PayboxAcquirer(osv.Model):
                 amount_str = float_repr(
                     amount,
                     self.pool.get('decimal.precision').precision_get(cr, uid, 'Account'))
-                amount = u"%s %s" % ((currency_str, amount_str) if currency.position == 'before' else (amount_str, currency_str))
+                amount = (u"%s %s" % ((currency_str, amount_str)
+                          if currency.position == 'before' else (amount_str, currency_str)))
             else:
                 amount_str = float_repr(
                     amount, self.pool.get('decimal.precision').precision_get(cr, uid, 'Account'))
-                amount = u"%s %s" % ((currency_str, amount_str) if currency.position == 'before' else (amount_str, currency_str))
+                amount = (u"%s %s" % ((currency_str, amount_str)
+                          if currency.position == 'before' else (amount_str, currency_str)))
 
         result = """<div class="payment_acquirers">
                          <div class="payment_header">
