@@ -14,4 +14,4 @@ If you do not use Portal module yet, you might have to configure the payment acq
 
 ### Contributors ###
 
-Florent Jouatte
+* Florent Jouatte
