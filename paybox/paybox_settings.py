@@ -2,8 +2,8 @@
 from openerp.osv import osv, fields
 
 URL = [('https://preprod-tpeweb.paybox.com/', 'Test pré-production'),
-       ('https://tpeweb.paybox.com', 'Production'),
-       ('https://tpeweb1.paybox.com', 'Production (secours)')]
+       ('https://tpeweb.paybox.com/', 'Production'),
+       ('https://tpeweb1.paybox.com/', 'Production (secours)')]
 
 
 class PayboxSettings(osv.Model):
@@ -12,7 +12,7 @@ class PayboxSettings(osv.Model):
     _name = 'paybox.settings'
 
     _columns = {'site': fields.char("Site", size=7),
-                'rank': fields.char("Rank", size=2),
+                'rank': fields.char("Rank", size=3),
                 'shop_id': fields.char("Shop id", size=9),
                 'key': fields.char("Key", password=True),
                 'porteur': fields.char("Porteur"),

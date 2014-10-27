@@ -40,6 +40,21 @@ class PayboxAcquirer(osv.Model):
     def check_paybox_url(self, cr, uid, url, context=None):
         """ check if the server aimed is ok. The second url is used if problems are encountered"""
         url_load = url+load
+        response = ''
+        try:
+            response = urllib.urlopen(url_load).read()
+        except:
+            _logger.error(u""" Vérification échouée, l'URL semble non accessible.
+Essaie d'une url différente...""")
+        if server_status_ok not in response:
+            for prod_url in URL:
+                if url in prod_url:
+                    if URL.index(prod_url) == 0:
+                        url = URL[1][1]
+                    else:
+                        url = URL[0][1]
+                    break
+        url_load = url+load
         try:
             response = urllib.urlopen(url_load).read()
         except:
@@ -48,14 +63,6 @@ Vérifiez votre connectivité """)
             raise osv.except_osv(
                 u"L'url du serveur Paybox semble inaccessible",
                 u"Vérifiez l'état de votre connection")
-
-        if server_status_ok not in response:
-            for prod_url in URL:
-                if url in prod_url:
-                    if URL.index(url) == 0:
-                        return URL[1][1]
-                    else:
-                        return URL[0][1]
         return url
 
     def build_paybox_args(self, cr, uid, reference, currency, amount, context=None):
