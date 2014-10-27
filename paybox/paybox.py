@@ -121,6 +121,9 @@ Vérifiez votre connectivité """)
                 # just to avoid rendering for non handled payment terms
                 if object.payment_term:
                     continue
+                # when the invoice is cancelled
+                if not reference:
+                    continue
                 vals = self.build_paybox_args(
                     cr, uid, reference, currency, amount, context=context)
                 if not vals:
