@@ -60,6 +60,11 @@ class PayboxController(openerpweb.Controller):
 
     _cp_path = '/paybox'
 
+    def build_args(self, args):
+        msg = '&Mt='+args['Mt']+'&Ref='+args['Ref']+'&Auto='+args['Auto']
+        msg += '&Erreur='+args['Erreur']+'&Signature='+args['Signature']
+        return msg
+
     def validate_invoice(self, db, ref, montant):
         """ validate the invoice """
         cr = pooler.get_db(db).cursor()
@@ -178,7 +183,14 @@ class PayboxController(openerpweb.Controller):
     @openerpweb.httprequest
     def ipn(self, req, **kw):
         logger.info(u"IPN")
-        msg = req.httprequest.environ['QUERY_STRING']
+        # The 'db' args is not used to construct the signature
+        if req.httprequest.environ['REQUEST_METHOD'] == 'GET':
+            msg = req.httprequest.environ['QUERY_STRING']
+            mt_pos = msg.find('&Mt')
+            msg = msg[mt_pos:]
+        else:
+            args = req.httprequest.args
+            msg = self.build_args(args)
         self.compute_response(req.params, msg)
         return ""
 
