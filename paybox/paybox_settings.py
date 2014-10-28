@@ -47,7 +47,7 @@ class PayboxSettings(osv.Model):
         devise = cfg_param.get_param(cr, uid, 'paybox.devise') or ""
         return {'site': site, 'rank': rank, 'shop_id': shop_id,
                 'key': key, 'porteur': porteur, 'hash': hashname, 'url': url,
-                'retour': retour, 'method': method, 'devise': devise}
+                'retour': retour, 'ipn': ipn, 'method': method, 'devise': devise}
 
     def set_devise(self, cr, uid, ids, context=None):
         for i in ids:
@@ -62,7 +62,7 @@ class PayboxSettings(osv.Model):
     def set_ipn(self, cr, uid, ids, context=None):
         for i in ids:
             ipn = self.browse(cr, uid, i, context)["ipn"] or ""
-            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.ipn", retour)
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.ipn", ipn)
 
     def set_retour(self, cr, uid, ids, context=None):
         for i in ids:
