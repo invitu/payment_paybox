@@ -37,6 +37,9 @@
                 <group string="URL Retour">
                     <field name="retour" class="oe_inline" required="True"/>
                 </group>
+                <group string="URL IPN">
+                    <field name="ipn" class="oe_inline" required="True"/>
+                </group>
                 <group string="Devise">
                     <field name="devise" class="oe_inline" required="True"/>
                 </group>

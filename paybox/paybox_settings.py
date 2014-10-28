@@ -19,6 +19,7 @@ class PayboxSettings(osv.Model):
                 'hash': fields.selection([('SHA512', 'sha512')], "Hash", select=True),
                 'url': fields.selection(URL, u"URL d'appel", select=True),
                 'retour': fields.char(u"URL utilisée pour la redirection"),
+                'ipn': fields.char(u"URL utilisée pour l'IPN"),
                 'method': fields.selection([('POST', 'Post'), ('GET', 'Get')], u"Méthode",
                                            select=True),
                 'devise': fields.selection([('978', 'Euro'), ('840', 'US Dollar')], u"Devise",
@@ -41,6 +42,7 @@ class PayboxSettings(osv.Model):
         hashname = cfg_param.get_param(cr, uid, 'paybox.hash') or ""
         url = cfg_param.get_param(cr, uid, 'paybox.url') or ""
         retour = cfg_param.get_param(cr, uid, 'paybox.retour') or ""
+        ipn = cfg_param.get_param(cr, uid, 'paybox.ipn') or ""
         method = cfg_param.get_param(cr, uid, 'paybox.method') or ""
         devise = cfg_param.get_param(cr, uid, 'paybox.devise') or ""
         return {'site': site, 'rank': rank, 'shop_id': shop_id,
@@ -56,6 +58,11 @@ class PayboxSettings(osv.Model):
         for i in ids:
             method = self.browse(cr, uid, i, context)["method"] or ""
             self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.method", method)
+
+    def set_ipn(self, cr, uid, ids, context=None):
+        for i in ids:
+            ipn = self.browse(cr, uid, i, context)["ipn"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.ipn", retour)
 
     def set_retour(self, cr, uid, ids, context=None):
         for i in ids:

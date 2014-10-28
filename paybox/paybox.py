@@ -82,13 +82,14 @@ Vérifiez votre connectivité """)
         url = self.check_paybox_url(cr, uid, paybox_values['url'])
         url += paiement_cgi
         url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
+        url_ipn = paybox_values['ipn']
         # the paybox amount need to be formated in cents so we convert it
         amount = str(int(amount*100))
         retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
         url_effectue = url_retour+db_args
         url_annule = url_retour+'/cancelled/'+db_args
         url_refuse = url_retour+'/refused/'+db_args
-        url_ipn = url_retour+'/ipn/'+db_args
+        url_ipn = url_ipn+'/ipn/'+db_args
         time = str(datetime.now())
         # We need to concatenate the args to compute the hmac
         args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
