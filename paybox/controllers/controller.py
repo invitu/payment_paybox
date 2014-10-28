@@ -61,7 +61,7 @@ class PayboxController(openerpweb.Controller):
     _cp_path = '/paybox'
 
     def build_args(self, args):
-        msg = '&Mt='+args['Mt']+'&Ref='+args['Ref']+'&Auto='+args['Auto']
+        msg = 'Mt='+args['Mt']+'&Ref='+urllib.quote_plus(args['Ref'])+'&Auto='+args['Auto']
         msg += '&Erreur='+args['Erreur']+'&Signature='+args['Signature']
         return msg
 
@@ -189,7 +189,7 @@ class PayboxController(openerpweb.Controller):
             mt_pos = msg.find('&Mt')
             msg = msg[mt_pos:]
         else:
-            args = req.httprequest.args
+            args = req.httprequest.form
             msg = self.build_args(args)
         self.compute_response(req.params, msg)
         return ""
