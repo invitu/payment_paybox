@@ -44,11 +44,12 @@ class TestPaybox(TransactionCase):
                       'quantity': '1', 'partner_id': partner, 'product_id': product_id}, context)
         self.invoice.action_move_create(cr, uid, [invoice_id])
         self.invoice.invoice_validate(cr, uid, [invoice_id])
-        invoice_browse = self.invoice.browse(cr, uid, invoice_id)
         cr.commit()
+        invoice_browse = self.invoice.browse(cr, uid, invoice_id)
         params = {'Ref': invoice_browse.number, 'Montant': '10000', 'db': cr.dbname}
         self.registry('ir.config_parameter').set_param(cr, uid, 'paybox.action', 517)
         self.registry('ir.config_parameter').set_param(cr, uid, 'paybox.menu', 442)
+        cr.commit()
         response = self.controller.compute_response(params, 'Test Paybox')
         self.assertEquals(
             response,

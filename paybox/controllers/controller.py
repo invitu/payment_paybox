@@ -124,6 +124,7 @@ class PayboxController(openerpweb.Controller):
         self.registry = RegistryManager.get(db)
         values = self.registry.get('paybox.settings').get_default_paybox_settings(
             cr, SUPERUSER_ID, None, None)
+        cr.close()
         return base_url % (invoice_id, values['menu'], values['action'])
 
     def compute_response(self, params, msg):
