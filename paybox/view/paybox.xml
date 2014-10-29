@@ -46,6 +46,13 @@
                 <group string="Méthode">
                     <field name="method" class="oe_inline" required="True"/>
                 </group>
+                <separator string="Portal settings"/>
+                <group string="Menu">
+                    <field name="menu" class="oe_inline" required="True"/>
+                </group>
+                <group string="Action">
+                    <field name="action" class="oe_inline" required="True"/>
+                </group>
             </form>
             </field>
         </record>

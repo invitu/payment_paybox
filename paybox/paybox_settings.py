@@ -24,6 +24,8 @@ class PayboxSettings(osv.Model):
                                            select=True),
                 'devise': fields.selection([('978', 'Euro'), ('840', 'US Dollar')], u"Devise",
                                            select=True),
+                'action': fields.many2one('ir.actions.actions', u"Action (vue)"),
+                'menu': fields.many2one('ir.ui.menu', u"Menu"),
                 }
 
     _defaults = {'hash': 'SHA512',
@@ -45,9 +47,24 @@ class PayboxSettings(osv.Model):
         ipn = cfg_param.get_param(cr, uid, 'paybox.ipn') or ""
         method = cfg_param.get_param(cr, uid, 'paybox.method') or ""
         devise = cfg_param.get_param(cr, uid, 'paybox.devise') or ""
+        action = cfg_param.get_param(cr, uid, 'paybox.action') or ""
+        menu = cfg_param.get_param(cr, uid, 'paybox.menu') or ""
+        if menu:
+            menu = int(menu)
         return {'site': site, 'rank': rank, 'shop_id': shop_id,
                 'key': key, 'porteur': porteur, 'hash': hashname, 'url': url,
-                'retour': retour, 'ipn': ipn, 'method': method, 'devise': devise}
+                'retour': retour, 'ipn': ipn, 'method': method, 'devise': devise,
+                'action': action, 'menu': menu}
+
+    def set_menu(self, cr, uid, ids, context=None):
+        for i in ids:
+            menu = self.browse(cr, uid, i, context)["menu"].id or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.menu", menu)
+
+    def set_action(self, cr, uid, ids, context=None):
+        for i in ids:
+            action = self.browse(cr, uid, i, context)["action"].id or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.action", action)
 
     def set_devise(self, cr, uid, ids, context=None):
         for i in ids:

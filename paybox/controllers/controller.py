@@ -3,6 +3,7 @@ from openerp.addons.web import http as openerpweb
 import logging
 from openerp.modules.registry import RegistryManager
 from openerp import pooler, SUPERUSER_ID
+from openerp.osv import osv
 from ..paybox_signature import Signature
 import urllib
 import werkzeug.utils
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 sign = Signature()
 pubkey = 'http://www1.paybox.com/wp-content/uploads/2014/03/pubkey.pem'
-base_url = '#id=%s&view_type=form&model=account.invoice&menu_id=254&action=285'
+base_url = '#id=%s&view_type=form&model=account.invoice&menu_id=%s&action=%s'
 ERROR_SUCCESS = ['00000']
 ERROR_CODE = {
     '00001': u"La connexion au centre d'autorisation a échoué ou une erreur interne est survenue",
@@ -118,8 +119,12 @@ class PayboxController(openerpweb.Controller):
                     return error_msg
         return False
 
-    def get_invoice_url(self, invoice_id):
-        return base_url % (invoice_id)
+    def get_invoice_url(self, db, invoice_id):
+        cr = pooler.get_db(db).cursor()
+        self.registry = RegistryManager.get(db)
+        values = self.registry.get('paybox.settings').get_default_paybox_settings(
+            cr, SUPERUSER_ID, None, None)
+        return base_url % (invoice_id, values['menu'], values['action'])
 
     def compute_response(self, params, msg):
         """ check response and do what we are supposed to do """
@@ -127,7 +132,7 @@ class PayboxController(openerpweb.Controller):
         # we maybe need to handle cases when db & ref are not in params
         db, ref = params['db'], params['Ref']
         invoice_id = self.get_invoice_id(db, ref)
-        url = self.get_invoice_url(invoice_id)
+        url = self.get_invoice_url(db, invoice_id)
         if 'Erreur' not in params:
             self.invoice_message_post(
                 db, [invoice_id], u"Paiement refusé", u"Paramètre 'Erreur' non trouvé")
