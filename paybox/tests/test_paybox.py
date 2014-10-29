@@ -47,10 +47,12 @@ class TestPaybox(TransactionCase):
         invoice_browse = self.invoice.browse(cr, uid, invoice_id)
         cr.commit()
         params = {'Ref': invoice_browse.number, 'Montant': '10000', 'db': cr.dbname}
+        self.registry('ir.config_parameter').set_param(cr, uid, 'paybox.action', 517)
+        self.registry('ir.config_parameter').set_param(cr, uid, 'paybox.menu', 442)
         response = self.controller.compute_response(params, 'Test Paybox')
         self.assertEquals(
             response,
-            '#id=%s&view_type=form&model=account.invoice&menu_id=254&action=285' % (invoice_id))
+            '#id=%s&view_type=form&model=account.invoice&menu_id=442&action=517' % (invoice_id))
 
     def test_check_error_code(self):
         """ ensure the check_error_code() method return the appropriate message """
