@@ -1,6 +1,9 @@
 # coding: utf-8
 from openerp.osv import osv
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Invoice(osv.Model):
@@ -22,7 +25,8 @@ class Invoice(osv.Model):
         """ search and return invoice id for the given reference """
         invoice_ids = self.search(cr, uid, [('number', '=', ref)])
         if not invoice_ids:
-            raise osv.except_osv(u"Action impossible", u"Facture %s non trouvée") % (ref)
+            logger.warning(u"[Paybox] Action impossible", u"Facture %s non trouvée") % (ref)
+            return False
         return invoice_ids[0]
 
     def _portal_payment_block(self, cr, uid, ids, fieldname, arg, context=None):
@@ -36,60 +40,71 @@ class Invoice(osv.Model):
                     cr, uid, this, this.number, this.currency_id, this.residual, context=context)
         return result
 
-    def create_voucher(self, cr, uid, invoice_id, partner_id, montant, name, context=None):
-        """ Create the voucher with the right context to create move and move lines
-            that will be reconcile """
-        voucher = self.pool.get('account.voucher')
+    def create_move(self, cr, uid, invoice):
         journal = self.pool.get('account.journal')
+        period = self.pool.get('account.period')
+        move = self.pool.get('account.move')
+        today = datetime.today()
+        bank_journal_id = journal.search(cr, uid, [('code', '=', 'BNK2')])
+        period_id = invoice.period_id.id if invoice else period.find(cr, uid, today)
+        values = {'journal_id': bank_journal_id[0], 'period_id': period_id,
+                  'date': today, 'name': '/'}
+        move_id = move.create(cr, uid, values)
+        return move_id
+
+    def create_move_lines(self, cr, uid, invoice, move_id, montant):
+        """ create move lines for the given amount and linked to given move_id """
+        move_lines = []
+        journal = self.pool.get('account.journal')
+        period = self.pool.get('account.period')
         account = self.pool.get('account.account')
+        move_line = self.pool.get('account.move.line')
+        today = datetime.today()
         bank_journal_id = journal.search(cr, uid, [('code', '=', 'BNK2')])
         bank_account_id = account.search(cr, uid, [('code', '=', '512102')])
-        if not bank_account_id:
-            raise osv.except_osv(u"Action impossible",
-                                 u"Le compte 'Bank' n'a pas été trouvé")
-        if not bank_journal_id:
-            raise osv.except_osv(u"Action impossible",
-                                 u"Le journal 'Bank' n'a pas été trouvé")
-        journal_id = bank_journal_id[0]
-        account_id = bank_account_id[0]
-        today = datetime.strftime(datetime.today(), '%Y-%m-%d')
-        context = {'default_amount': montant, 'default_reference': False, 'uid': 1,
-                   'invoice_type': 'out_invoice', 'journal_type': 'sale', 'default_type': 'receipt',
-                   'date': today,
-                   'search_disable_custom_filters': True, 'voucher_special_currency_rate': 1.0,
-                   'default_partner_id': partner_id, 'payment_expected_currency': 1,
-                   'active_id': invoice_id, 'close_after_process': True, 'tz': 'Europe/Paris',
-                   'active_model': 'account.invoice', 'invoice_id': invoice_id,
-                   'voucher_special_currency': 1, 'active_ids': [invoice_id], 'type': 'receipt'}
-        values = voucher.recompute_voucher_lines(
-            cr, uid, [], partner_id, journal_id, montant,
-            1, 'receipt', today, context=context)
-        value = values['value']
-        line, line_index = self.get_credit_line(cr, uid, value['line_cr_ids'], montant, name)
-        if not line:
-            raise osv.except_osv(u"Action impossible", u"Aucune ligne de dette n'a été trouvée")
-        values.pop('value')
-        values.update(account_id=account_id, name=name)
-        values['line_cr_ids'] = [[5, False, False], [0, False, value['line_cr_ids'][line_index]]]
-        voucher_id = voucher.create(cr, uid, values, context=context)
-        return voucher_id
+        customer_account_id = account.search(cr, uid, [('code', '=', '411100')])
+        period_id = invoice.period_id.id if invoice else period.find(cr, uid, today)
+        partner_id = invoice.partner_id.id if invoice else False
+        values = {'journal_id': bank_journal_id[0], 'period_id': period_id,
+                  'move_id': move_id, 'date': today, 'credit': montant,
+                  'account_id': customer_account_id[0], 'name': '/',
+                  'partner_id': partner_id}
+        credit_line_id = move_line.create(cr, uid, values)
+        move_lines.append(credit_line_id)
+        values = {'journal_id': bank_journal_id[0], 'period_id': period_id,
+                  'move_id': move_id, 'date': today, 'debit': montant,
+                  'account_id': bank_account_id[0], 'name': '/',
+                  'partner_id': partner_id}
+        move_line.create(cr, uid, values)
+        return move_lines
+
+    def reconcile(self, cr, uid, invoice, line_id, montant):
+        """ reconcile lines from line_ids """
+        reconcile = self.pool.get('account.move.line.reconcile')
+        move_line = self.pool.get('account.move.line')
+        move_id = invoice.move_id.id
+        move_line_id = move_line.search(
+            cr, uid, ['&', ('move_id', '=', move_id), ('debit', '=', montant)])
+        if not move_line_id:
+            logger.warning(
+                u"Le paiement de %s n'a pas été lettré",
+                u"Vérifiez les montants et effectuer le lettrage manuellement") % (montant)
+            return False
+        line_id.append(move_line_id[0])
+        context = {'active_ids': line_id}
+        reconcile.trans_rec_reconcile_full(cr, uid, {}, context)
+        return True
 
     def validate_invoice_paybox(self, cr, uid, ref, montant):
         """ Store payment for the referenced invoice with a specific amount
             Create a voucher to register the payment for the invoice given.
             Then run the workflow """
-        context = {}
         # The amount is formatted in cent we need the convert the value
         montant = float(montant)/100
-        voucher = self.pool.get('account.voucher')
-        invoice_id = self.search(cr, uid, [('number', '=', ref)])
-        if not invoice_id:
-            raise osv.except_osv(u"La facture %s n'a pas été trouvée",
-                                 u"Prenez contact avec l'administrateur") % (ref)
-        invoice_id = invoice_id[0]
-        invoice = self.browse(cr, uid, invoice_id)
-        name = 'Paybox %s' % (invoice.number)
-        partner_id = invoice.partner_id.id
-        voucher_id = self.create_voucher(cr, uid, invoice_id, partner_id, montant, name)
-        voucher.button_proforma_voucher(cr, uid, [voucher_id], context)
+        invoice_id = self.get_invoice_id(cr, uid, ref)
+        invoice = self.browse(cr, uid, invoice_id) if invoice_id else False
+        move_id = self.create_move(cr, uid, invoice)
+        move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
+        if invoice:
+            self.reconcile(cr, uid, invoice, move_line_id, montant)
         return invoice_id
