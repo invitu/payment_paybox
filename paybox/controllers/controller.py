@@ -80,6 +80,9 @@ class PayboxController(openerpweb.Controller):
         cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
+        if not invoice_id:
+            cr.close()
+            return False
         state = invoice.browse(cr, SUPERUSER_ID, invoice_id).state
         cr.close()
         return state
@@ -102,6 +105,7 @@ class PayboxController(openerpweb.Controller):
         invoice_ids = invoice.search(cr, SUPERUSER_ID, [('number', '=', ref)])
         cr.close()
         if not invoice_ids:
+            logger.warning(u"[Paybox] - Action impossible, facture %s non trouvée" % (ref))
             return False
         return invoice_ids[0]
 
@@ -121,6 +125,9 @@ class PayboxController(openerpweb.Controller):
     def get_invoice_url(self, db, invoice_id):
         cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
+        if not invoice_id:
+            cr.close()
+            return '/'
         values = self.registry.get('paybox.settings').get_default_paybox_settings(
             cr, SUPERUSER_ID, None, None)
         cr.close()
@@ -168,12 +175,14 @@ class PayboxController(openerpweb.Controller):
                     u"Paiement en ligne non pris en compte")
                 return url
             invoice_id = self.validate_invoice(db, ref, montant)
+            if not invoice_id:
+                return url
             self.invoice_message_post(
                 db, [invoice_id], u"Paiement en ligne accepté",
                 u"Montant : %s" % (float(int(montant)/100)))
             return url
         else:
-            logger.info(u"Une erreur s'est produite, le paiement n'a pu être effectué")
+            logger.info(u"[Paybox] - Une erreur s'est produite, le paiement n'a pu être effectué")
             self.invoice_message_post(
                 db, [invoice_id], u"Paiement refusé", u"Une erreur est survenue")
             return url

@@ -44,7 +44,7 @@ class PayboxAcquirer(osv.Model):
         try:
             response = urllib.urlopen(url_load).read()
         except:
-            _logger.error(u""" Vérification échouée, l'URL semble non accessible.
+            _logger.error(u"""[Paybox] - Vérification échouée, l'URL semble non accessible.
 Essaie d'une url différente...""")
         if server_status_ok not in response:
             for prod_url in URL:
@@ -58,7 +58,7 @@ Essaie d'une url différente...""")
         try:
             response = urllib.urlopen(url_load).read()
         except:
-            _logger.error(u""" Vérification échouée, l'URL semble non accessible.
+            _logger.error(u"""[Paybox] - Vérification échouée, l'URL semble non accessible.
 Vérifiez votre connectivité """)
             raise osv.except_osv(
                 u"L'url du serveur Paybox semble inaccessible",
@@ -128,7 +128,7 @@ Vérifiez votre connectivité """)
                 vals = self.build_paybox_args(
                     cr, uid, reference, currency, amount, context=context)
                 if not vals:
-                    _logger.warning(u""" Génération formulaire Paybox impossible.
+                    _logger.warning(u"""[Paybox] - Génération formulaire Paybox impossible.
 Données insuffisantes """)
                     continue
                 content = this.render(

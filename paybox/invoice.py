@@ -10,22 +10,13 @@ class Invoice(osv.Model):
 
     _inherit = 'account.invoice'
 
-    def get_credit_line(self, cr, uid, lines, montant, name, context=None):
-        """ return index of the right line """
-        invoice_number = name[7:]
-        for line in lines:
-            if not line['name'] == invoice_number:
-                continue
-            if not line['amount'] == montant:
-                continue
-            return True, lines.index(line)
-        return False, False
-
-    def get_invoice_id(self, cr, uid, ref, context=None):
+    def get_invoice_id(self, cr, uid, ref, montant, context=None):
         """ search and return invoice id for the given reference """
         invoice_ids = self.search(cr, uid, [('number', '=', ref)])
         if not invoice_ids:
-            logger.warning(u"[Paybox] Action impossible", u"Facture %s non trouvée") % (ref)
+            warning_id = self.pool.get('paybox.warning').create(
+                cr, uid, {'ref': ref, 'amount': montant})
+            self.pool.get('paybox.warning').send_warning_mail(cr, uid, warning_id, 'invoice')
             return False
         return invoice_ids[0]
 
@@ -46,7 +37,7 @@ class Invoice(osv.Model):
         move = self.pool.get('account.move')
         today = datetime.today()
         bank_journal_id = journal.search(cr, uid, [('code', '=', 'BNK2')])
-        period_id = invoice.period_id.id if invoice else period.find(cr, uid, today)
+        period_id = invoice.period_id.id if invoice else period.find(cr, uid, today)[0]
         values = {'journal_id': bank_journal_id[0], 'period_id': period_id,
                   'date': today, 'name': '/'}
         move_id = move.create(cr, uid, values)
@@ -63,7 +54,7 @@ class Invoice(osv.Model):
         bank_journal_id = journal.search(cr, uid, [('code', '=', 'BNK2')])
         bank_account_id = account.search(cr, uid, [('code', '=', '512102')])
         customer_account_id = account.search(cr, uid, [('code', '=', '411100')])
-        period_id = invoice.period_id.id if invoice else period.find(cr, uid, today)
+        period_id = invoice.period_id.id if invoice else period.find(cr, uid, today)[0]
         partner_id = invoice.partner_id.id if invoice else False
         values = {'journal_id': bank_journal_id[0], 'period_id': period_id,
                   'move_id': move_id, 'date': today, 'credit': montant, 'debit': 0.00,
@@ -86,12 +77,12 @@ class Invoice(osv.Model):
         move_line_id = move_line.search(
             cr, uid, ['&', ('move_id', '=', move_id), ('debit', '=', montant)])
         if not move_line_id:
-            # logger.info(
-            #    u"Le paiement n'a pas été lettré",
-            #    u"Vérifiez les montants et effectuer le lettrage manuellement")
+            logger.info(
+                u"""[Paybox] - Le paiement n'a pas été lettré,
+vérifiez les montants et effectuer le lettrage manuellement""")
             warning_id = self.pool.get('paybox.warning').create(
                 cr, uid, {'ref': invoice.number, 'amount': montant})
-            self.pool.get('paybox.warning').send_warning_mail(cr, uid, warning_id)
+            self.pool.get('paybox.warning').send_warning_mail(cr, uid, warning_id, 'reconcile')
             return False
         line_id.append(move_line_id[0])
         context = {'active_ids': line_id}
@@ -104,7 +95,7 @@ class Invoice(osv.Model):
             Then run the workflow """
         # The amount is formatted in cent we need the convert the value
         montant = float(montant)/100
-        invoice_id = self.get_invoice_id(cr, uid, ref)
+        invoice_id = self.get_invoice_id(cr, uid, ref, montant)
         invoice = self.browse(cr, uid, invoice_id) if invoice_id else False
         move_id = self.create_move(cr, uid, invoice)
         move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
