@@ -38,6 +38,7 @@
     'data': [
         'paybox_data.xml',
         'view/paybox.xml',
+        'data/template.xml',
     ],
     'demo_xml': [
     ],

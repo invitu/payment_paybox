@@ -46,12 +46,16 @@
                 <group string="Méthode">
                     <field name="method" class="oe_inline" required="True"/>
                 </group>
-                <separator string="Portal settings"/>
+                <separator string="Portal Settings"/>
                 <group string="Menu">
                     <field name="menu" class="oe_inline" required="True"/>
                 </group>
                 <group string="Action">
                     <field name="action" class="oe_inline" required="True"/>
+                </group>
+                <separator string="Contact Settings"/>
+                <group string="Email administrateur">
+                    <field name="admin_mail" class="oe_inline" required="True"/>
                 </group>
             </form>
             </field>

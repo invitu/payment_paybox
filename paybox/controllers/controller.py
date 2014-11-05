@@ -3,7 +3,6 @@ from openerp.addons.web import http as openerpweb
 import logging
 from openerp.modules.registry import RegistryManager
 from openerp import pooler, SUPERUSER_ID
-from openerp.osv import osv
 from ..paybox_signature import Signature
 import urllib
 import werkzeug.utils

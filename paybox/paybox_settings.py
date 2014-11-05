@@ -26,6 +26,7 @@ class PayboxSettings(osv.Model):
                                            select=True),
                 'action': fields.many2one('ir.actions.actions', u"Action (vue)"),
                 'menu': fields.many2one('ir.ui.menu', u"Menu"),
+                'admin_mail': fields.char(u"Email de l'administrateur Paybox"),
                 }
 
     _defaults = {'hash': 'SHA512',
@@ -49,12 +50,18 @@ class PayboxSettings(osv.Model):
         devise = cfg_param.get_param(cr, uid, 'paybox.devise') or ""
         action = cfg_param.get_param(cr, uid, 'paybox.action') or ""
         menu = cfg_param.get_param(cr, uid, 'paybox.menu') or ""
+        admin_mail = cfg_param.get_param(cr, uid, 'paybox.admin_mail') or ""
         if menu:
             menu = int(menu)
         return {'site': site, 'rank': rank, 'shop_id': shop_id,
                 'key': key, 'porteur': porteur, 'hash': hashname, 'url': url,
                 'retour': retour, 'ipn': ipn, 'method': method, 'devise': devise,
-                'action': action, 'menu': menu}
+                'action': action, 'menu': menu, 'admin_mail': admin_mail}
+
+    def set_admin_mail(self, cr, uid, ids, context=None):
+        for i in ids:
+            admin_mail = self.browse(cr, uid, i, context)["admin_mail"] or ""
+            self.pool.get("ir.config_parameter").set_param(cr, uid, "paybox.admin_mail", admin_mail)
 
     def set_menu(self, cr, uid, ids, context=None):
         for i in ids:

@@ -66,13 +66,13 @@ class Invoice(osv.Model):
         period_id = invoice.period_id.id if invoice else period.find(cr, uid, today)
         partner_id = invoice.partner_id.id if invoice else False
         values = {'journal_id': bank_journal_id[0], 'period_id': period_id,
-                  'move_id': move_id, 'date': today, 'credit': montant,
+                  'move_id': move_id, 'date': today, 'credit': montant, 'debit': 0.00,
                   'account_id': customer_account_id[0], 'name': '/',
                   'partner_id': partner_id}
         credit_line_id = move_line.create(cr, uid, values)
         move_lines.append(credit_line_id)
         values = {'journal_id': bank_journal_id[0], 'period_id': period_id,
-                  'move_id': move_id, 'date': today, 'debit': montant,
+                  'move_id': move_id, 'date': today, 'debit': montant, 'credit': 0.00,
                   'account_id': bank_account_id[0], 'name': '/',
                   'partner_id': partner_id}
         move_line.create(cr, uid, values)
@@ -86,9 +86,12 @@ class Invoice(osv.Model):
         move_line_id = move_line.search(
             cr, uid, ['&', ('move_id', '=', move_id), ('debit', '=', montant)])
         if not move_line_id:
-            logger.warning(
-                u"Le paiement de %s n'a pas été lettré",
-                u"Vérifiez les montants et effectuer le lettrage manuellement") % (montant)
+            # logger.info(
+            #    u"Le paiement n'a pas été lettré",
+            #    u"Vérifiez les montants et effectuer le lettrage manuellement")
+            warning_id = self.pool.get('paybox.warning').create(
+                cr, uid, {'ref': invoice.number, 'amount': montant})
+            self.pool.get('paybox.warning').send_warning_mail(cr, uid, warning_id)
             return False
         line_id.append(move_line_id[0])
         context = {'active_ids': line_id}

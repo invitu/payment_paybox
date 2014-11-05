@@ -20,7 +20,7 @@ class Signature():
         return verifier.verify(ha, signature)
 
     def remove_sign(self, msg):
-        """ remove signature arg from the string given """
+        """ remove signature arg from the given string"""
         pos = msg.find('&Signature')
         if pos == -1:
             return msg
