@@ -2,6 +2,7 @@
 from openerp.osv import osv
 from datetime import datetime
 import logging
+import psycopg2
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ vérifiez les montants et effectuer le lettrage manuellement""")
         reconcile.trans_rec_reconcile_full(cr, uid, {}, context)
         return True
 
-    def validate_invoice_paybox(self, cr, uid, ref, montant):
+    def validate_invoice_paybox(self, cr, uid, ref, montant, attempt=0, nocommit=False):
         """ Store payment for the referenced invoice with a specific amount
             Create a voucher to register the payment for the invoice given.
             Then run the workflow """
@@ -101,4 +102,13 @@ vérifiez les montants et effectuer le lettrage manuellement""")
         move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
         if invoice:
             self.reconcile(cr, uid, invoice, move_line_id, montant)
+        if not nocommit:
+            try:
+                cr.commit()
+            except psycopg2.TransactionRollbackError:
+                if attempt < 2:
+                    cr.rollback()
+                    return self.validate_invoice_paybox(cr, uid, ref, montant, attempt=attempt+1)
+                else:
+                    raise psycopg2.TransactionRollbackError
         return invoice_id
