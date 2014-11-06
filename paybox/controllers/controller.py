@@ -155,12 +155,12 @@ class PayboxController(openerpweb.Controller):
                 cr, db, [invoice_id], u"Paiement refusé", u"Signature non vérifiée")
             return url
         if ref and montant and erreur in ERROR_SUCCESS:
-            if self.get_invoice_state(cr, invoice_id) == 'paid':
+            if self.get_invoice_state(cr, db, invoice_id) == 'paid':
                 self.invoice_message_post(
                     cr, db, [invoice_id], u"Facture déjà payée",
                     u"Paiement en ligne non pris en compte")
                 return url
-            invoice_id = self.validate_invoice(cr, ref, montant)
+            invoice_id = self.validate_invoice(cr, db, ref, montant)
             if not invoice_id:
                 return url
             self.invoice_message_post(
@@ -205,11 +205,17 @@ class PayboxController(openerpweb.Controller):
         logger.info(u"REFUSE")
         cr = pooler.get_db(req.params['db']).cursor()
         invoice_id = self.get_invoice_id(cr, req.params['db'], req.params['Ref'])
-        return werkzeug.utils.redirect(self.get_invoice_url(req.params['db'], invoice_id), 303)
+        url = self.get_invoice_url(cr, req.params['db'], invoice_id)
+        cr.commit()
+        cr.close()
+        return werkzeug.utils.redirect(url, 303)
 
     @openerpweb.httprequest
     def cancelled(self, req, **kw):
         logger.info(u"ANNULE")
         cr = pooler.get_db(req.params['db']).cursor()
         invoice_id = self.get_invoice_id(cr, req.params['db'], req.params['Ref'])
-        return werkzeug.utils.redirect(self.get_invoice_url(req.params['db'], invoice_id), 303)
+        url = self.get_invoice_url(cr, req.params['db'], invoice_id)
+        cr.commit()
+        cr.close()
+        return werkzeug.utils.redirect(url, 303)
