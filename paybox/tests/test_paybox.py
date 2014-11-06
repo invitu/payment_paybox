@@ -50,7 +50,7 @@ class TestPaybox(TransactionCase):
         self.registry('ir.config_parameter').set_param(cr, uid, 'paybox.action', 517)
         self.registry('ir.config_parameter').set_param(cr, uid, 'paybox.menu', 442)
         cr.commit()
-        response = self.controller.compute_response(params, 'Test Paybox')
+        response = self.controller.compute_response(cr, params, 'Test Paybox')
         self.assertEquals(
             response,
             '#id=%s&view_type=form&model=account.invoice&menu_id=442&action=517' % (invoice_id))

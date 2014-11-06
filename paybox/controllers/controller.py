@@ -65,45 +65,34 @@ class PayboxController(openerpweb.Controller):
         msg += '&Erreur='+args['Erreur']+'&Signature='+args['Signature']
         return msg
 
-    def validate_invoice(self, db, ref, montant):
+    def validate_invoice(self, cr, db, ref, montant):
         """ validate the invoice """
-        cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
         resp = invoice.validate_invoice_paybox(cr, SUPERUSER_ID, ref, montant)
-        cr.commit()
-        cr.close()
         return resp
 
-    def get_invoice_state(self, db, invoice_id):
+    def get_invoice_state(self, cr, db, invoice_id):
         """ return state of the given invoice id """
-        cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
         if not invoice_id:
-            cr.close()
             return False
         state = invoice.browse(cr, SUPERUSER_ID, invoice_id).state
-        cr.close()
         return state
 
-    def invoice_message_post(self, db, invoice_id, title, msg):
+    def invoice_message_post(self, cr, db, invoice_id, title, msg):
         """ post message to the openchatter of the invoice """
-        cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
         invoice.message_post(
             cr, SUPERUSER_ID, invoice_id, msg, title)
-        cr.commit()
-        cr.close()
 
-    def get_invoice_id(self, db, ref):
+    def get_invoice_id(self, cr, db, ref):
         """ return the invoice id for the ref given """
-        cr = pooler.get_db(db).cursor()
         self.registry = RegistryManager.get(db)
         invoice = self.registry.get("account.invoice")
         invoice_ids = invoice.search(cr, SUPERUSER_ID, [('number', '=', ref)])
-        cr.close()
         if not invoice_ids:
             logger.warning(u"[Paybox] - Action impossible, facture %s non trouvée" % (ref))
             return False
@@ -122,81 +111,82 @@ class PayboxController(openerpweb.Controller):
                     return error_msg
         return False
 
-    def get_invoice_url(self, db, invoice_id):
-        cr = pooler.get_db(db).cursor()
+    def get_invoice_url(self, cr, db, invoice_id):
         self.registry = RegistryManager.get(db)
         if not invoice_id:
-            cr.close()
             return '/'
         values = self.registry.get('paybox.settings').get_default_paybox_settings(
             cr, SUPERUSER_ID, None, None)
-        cr.close()
         return base_url % (invoice_id, values['menu'], values['action'])
 
-    def compute_response(self, params, msg):
+    def compute_response(self, cr, params, msg):
         """ check response and do what we are supposed to do """
         key = urllib.urlopen(pubkey).read()
         # we maybe need to handle cases when db & ref are not in params
         db, ref = params['db'], params['Ref']
-        invoice_id = self.get_invoice_id(db, ref)
-        url = self.get_invoice_url(db, invoice_id)
+        invoice_id = self.get_invoice_id(cr, db, ref)
+        url = self.get_invoice_url(cr, db, invoice_id)
         if 'Erreur' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Erreur' non trouvé")
+                cr, db, [invoice_id], u"Paiement refusé", u"Paramètre 'Erreur' non trouvé")
             return url
         if 'Auto' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Auto' non trouvé")
+                cr, db, [invoice_id], u"Paiement refusé", u"Paramètre 'Auto' non trouvé")
             return url
         if 'Signature' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Signature' non trouvé")
+                cr, db, [invoice_id], u"Paiement refusé", u"Paramètre 'Signature' non trouvé")
             return url
         if 'Mt' not in params:
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement refusé", u"Paramètre 'Mt' non trouvé")
+                cr, db, [invoice_id], u"Paiement refusé", u"Paramètre 'Mt' non trouvé")
             return url
         montant = params['Mt']
         erreur, signature = params['Erreur'], params['Signature']
         error_msg = self.check_error_code(erreur)
         if error_msg:
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement annulé ou refusé",
+                cr, db, [invoice_id], u"Paiement annulé ou refusé",
                 u"Une erreur est survenue : %s" % (error_msg))
             return url
         if not sign.verify(signature, msg, key):
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement refusé", u"Signature non vérifiée")
+                cr, db, [invoice_id], u"Paiement refusé", u"Signature non vérifiée")
             return url
         if ref and montant and erreur in ERROR_SUCCESS:
-            if self.get_invoice_state(db, invoice_id) == 'paid':
+            if self.get_invoice_state(cr, invoice_id) == 'paid':
                 self.invoice_message_post(
-                    db, [invoice_id], u"Facture déjà payée",
+                    cr, db, [invoice_id], u"Facture déjà payée",
                     u"Paiement en ligne non pris en compte")
                 return url
-            invoice_id = self.validate_invoice(db, ref, montant)
+            invoice_id = self.validate_invoice(cr, ref, montant)
             if not invoice_id:
                 return url
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement en ligne accepté",
+                cr, db, [invoice_id], u"Paiement en ligne accepté",
                 u"Montant : %s" % (float(int(montant)/100)))
             return url
         else:
             logger.info(u"[Paybox] - Une erreur s'est produite, le paiement n'a pu être effectué")
             self.invoice_message_post(
-                db, [invoice_id], u"Paiement refusé", u"Une erreur est survenue")
+                cr, db, [invoice_id], u"Paiement refusé", u"Une erreur est survenue")
             return url
 
     @openerpweb.httprequest
     def index(self, req, **kw):
         logger.info(u"EFFECTUE")
+        cr = pooler.get_db(req.params['db']).cursor()
         msg = req.httprequest.environ['QUERY_STRING']
-        url = self.compute_response(req.params, msg)
+        url = self.compute_response(cr, req.params, msg)
+        cr.commit()
+        cr.close()
         return werkzeug.utils.redirect(url, 303)
 
     @openerpweb.httprequest
     def ipn(self, req, **kw):
         logger.info(u"IPN")
+        cr = pooler.get_db(req.params['db']).cursor()
         # The 'db' args is not used to construct the signature
         if req.httprequest.environ['REQUEST_METHOD'] == 'GET':
             msg = req.httprequest.environ['QUERY_STRING']
@@ -205,17 +195,21 @@ class PayboxController(openerpweb.Controller):
         else:
             args = req.httprequest.form
             msg = self.build_args(args)
-        self.compute_response(req.params, msg)
+        self.compute_response(cr, req.params, msg)
+        cr.commit()
+        cr.close()
         return ""
 
     @openerpweb.httprequest
     def refused(self, req, **kw):
         logger.info(u"REFUSE")
-        invoice_id = self.get_invoice_id(req.params['db'], req.params['Ref'])
+        cr = pooler.get_db(req.params['db']).cursor()
+        invoice_id = self.get_invoice_id(cr, req.params['db'], req.params['Ref'])
         return werkzeug.utils.redirect(self.get_invoice_url(req.params['db'], invoice_id), 303)
 
     @openerpweb.httprequest
     def cancelled(self, req, **kw):
         logger.info(u"ANNULE")
-        invoice_id = self.get_invoice_id(req.params['db'], req.params['Ref'])
+        cr = pooler.get_db(req.params['db']).cursor()
+        invoice_id = self.get_invoice_id(cr, req.params['db'], req.params['Ref'])
         return werkzeug.utils.redirect(self.get_invoice_url(req.params['db'], invoice_id), 303)
