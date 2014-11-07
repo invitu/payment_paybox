@@ -102,10 +102,12 @@ vérifiez les montants et effectuer le lettrage manuellement""")
         move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
         if invoice:
             self.reconcile(cr, uid, invoice, move_line_id, montant)
+        # nocommit can be used for unit tests
         if not nocommit:
             try:
                 cr.commit()
             except psycopg2.TransactionRollbackError:
+                # just rollback and retry to validate the invoice a second time
                 if attempt < 2:
                     cr.rollback()
                     return self.validate_invoice_paybox(cr, uid, ref, montant, attempt=attempt+1)
