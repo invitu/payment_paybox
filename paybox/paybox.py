@@ -66,7 +66,8 @@ Vérifiez votre connectivité """)
         return url
 
     def build_paybox_args(self, cr, uid, reference, currency, amount, context=None):
-        """ return args needed to fill paybox form """
+        """ return args needed to fill paybox form. Most of the args needed are
+            set in the paybox settings part """
         db_args = "?db=%s" % (cr.dbname)
         paybox_values = self.get_paybox_settings(cr, uid, None)
         for value in paybox_values:
@@ -91,7 +92,7 @@ Vérifiez votre connectivité """)
         url_refuse = url_retour+'/refused/'+db_args
         url_ipn = url_ipn+'/ipn/'+db_args
         time = str(datetime.now())
-        # We need to concatenate the args to compute the hmac
+        # we need to concatenate the args to compute the hmac
         args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
                 '&PBX_HASH=' + _hash + '&PBX_CMD=' + reference +
                 '&PBX_IDENTIFIANT=' + identifiant + '&PBX_TOTAL=' + amount +
@@ -194,6 +195,7 @@ Données insuffisantes """)
 
     def _wrap_payment_block(self, cr, uid, html_block, amount,
                             currency, acquirer=None, context=None):
+        """ override original method to add the paybox html block """
         if not html_block:
             if acquirer and acquirer == 'Paybox':
                 return ''

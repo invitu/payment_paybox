@@ -33,6 +33,7 @@ class Invoice(osv.Model):
         return result
 
     def create_move(self, cr, uid, invoice):
+        """ create move with the right values """
         journal = self.pool.get('account.journal')
         period = self.pool.get('account.period')
         move = self.pool.get('account.move')
@@ -71,7 +72,7 @@ class Invoice(osv.Model):
         return move_lines
 
     def reconcile(self, cr, uid, invoice, line_id, montant):
-        """ reconcile lines from line_ids """
+        """ try to find the invoice move_line that will be reconciled with the payment line """
         reconcile = self.pool.get('account.move.line.reconcile')
         move_line = self.pool.get('account.move.line')
         move_id = invoice.move_id.id
@@ -91,9 +92,9 @@ vérifiez les montants et effectuer le lettrage manuellement""")
         return True
 
     def validate_invoice_paybox(self, cr, uid, ref, montant, attempt=0, nocommit=False):
-        """ Store payment for the referenced invoice with a specific amount
-            Create a voucher to register the payment for the invoice given.
-            Then run the workflow """
+        """ Store payment for the referenced invoice with a specific amount.
+            First, we create move and move line then, if the invoice still exists
+            and a line is found, the two lines are reconciled """
         # The amount is formatted in cent we need the convert the value
         montant = float(montant)/100
         invoice_id = self.get_invoice_id(cr, uid, ref, montant)
