@@ -20,28 +20,64 @@ class TestPaybox(TransactionCase):
         self.product = self.registry('product.product')
         self.invoice_line = self.registry('account.invoice.line')
         self.voucher = self.registry('account.voucher')
+        self.mail = self.registry('mail.mail')
         self.sign = Signature()
         self.controller = PayboxController()
+        self.company_id = 1
+        self.currency_id = 1
+        self.product_id = self.product.search(
+            self.cr, self.uid, [('name_template', '=', 'Adhésion')])[0]
+        self.product_account_id = self.account.search(
+            self.cr, self.uid, [('code', '=', '707100')])[0]
+
+    def test_get_invoice_id(self):
+        cr, uid = self.cr, self.uid
+        partner_id = self.partner.create(cr, uid, {'name': 'test'})
+        account_id = self.account.search(cr, uid, [('code', '=', '411100')])[0]
+        journal_id = self.journal.search(cr, uid, [('code', '=', 'SAJ')])[0]
+        count_mail = self.mail.search(cr, uid, [], count=True)
+        # create and validate an invoice
+        invoice_id = self.invoice.create(
+            cr, uid,
+            {'account_id': account_id,
+             'company_id': self.company_id, 'journal_id': journal_id,
+             'currency_id': self.currency_id, 'partner_id': partner_id, 'reference_type': 'none'})
+        self.invoice_line.create(
+            cr, uid, {'account_id': self.product_account_id, 'name': 'Adhésion',
+                      'invoice_id': invoice_id, 'price_unit': '100',
+                      'price_subtotal': '100', 'company_id': self.company_id, 'discount': False,
+                      'quantity': '1', 'partner_id': partner_id, 'product_id': self.product_id}, {})
+        self.invoice.action_move_create(cr, uid, [invoice_id])
+        self.invoice.invoice_validate(cr, uid, [invoice_id])
+        cr.commit()
+        # check if the function return the good result ...
+        self.assertEquals(
+            invoice_id, self.invoice.get_invoice_id(cr, uid, self.invoice.browse(
+                cr, uid, invoice_id).number, 125, {}))
+        # ... and does not send warning mail
+        self.assertEquals(count_mail, self.mail.search(cr, uid, [], count=True))
+        # try with a non existing invoice number ...
+        self.assertFalse(self.invoice.get_invoice_id(cr, uid, 'SAJ/2011/005', 125, {}))
+        # check that a mail has been sended
+        # self.assertEquals(count_mail+1, self.mail.search(cr, uid, [], count=True))
 
     def test_compute_response(self):
-        """ """
+        """assert that compute_response method return the right url"""
         cr, uid, context = self.cr, self.uid, {}
-        product_account_id = self.account.search(cr, uid, [('code', '=', '707100')])[0]
         sale_journal = self.journal.search(cr, uid, [('code', '=', 'SAJ')])[0]
         company_id = 1
         partner = self.partner.create(cr, uid, {'name': 'test'})
-        product_id = self.product.search(
-            cr, uid, [('name_template', '=', 'Adhésion')])[0]
         acc = self.account.search(cr, uid, [('code', '=', '411100')])[0]
         datas = {'number': 'Facture', 'account_id': acc,
                  'partner_id': partner, 'journal_id': sale_journal, 'payment_term': None}
         context['active_ids'] = [partner]
         invoice_id = self.invoice.create(cr, uid, datas)
         self.invoice_line.create(
-            cr, uid, {'account_id': product_account_id, 'name': 'Adhésion',
+            cr, uid, {'account_id': self.product_account_id, 'name': 'Adhésion',
                       'invoice_id': invoice_id, 'price_unit': '100',
                       'price_subtotal': '100', 'company_id': company_id, 'discount': False,
-                      'quantity': '1', 'partner_id': partner, 'product_id': product_id}, context)
+                      'quantity': '1', 'partner_id': partner,
+                      'product_id': self.product_id}, context)
         self.invoice.action_move_create(cr, uid, [invoice_id])
         self.invoice.invoice_validate(cr, uid, [invoice_id])
         cr.commit()
