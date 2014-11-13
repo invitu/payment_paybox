@@ -69,6 +69,7 @@ Vérifiez votre connectivité """)
         """ return args needed to fill paybox form. Most of the args needed are
             set in the paybox settings part """
         db_args = "?db=%s" % (cr.dbname)
+        invoice = self.pool.get('account.invoice')
         paybox_values = self.get_paybox_settings(cr, uid, None)
         for value in paybox_values:
             if not value:
@@ -80,6 +81,10 @@ Vérifiez votre connectivité """)
         identifiant, devise = paybox_values['shop_id'], paybox_values['devise']
         rang, site = paybox_values['rank'], paybox_values['site']
         porteur, _hash = paybox_values['porteur'], paybox_values['hash']
+        if reference:
+            invoice_ids = invoice.search(cr, uid, [('number', '=', reference)])
+            if invoice_ids:
+                porteur = invoice.browse(cr, uid, invoice_ids[0]).partner_id.email
         url = self.check_paybox_url(cr, uid, paybox_values['url'])
         url += paiement_cgi
         url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
