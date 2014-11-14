@@ -1,5 +1,5 @@
 # coding: utf-8
-from openerp.osv import osv
+from openerp.osv import osv, fields
 from datetime import datetime
 import logging
 import psycopg2
@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 class Invoice(osv.Model):
 
     _inherit = 'account.invoice'
+
+    # Just add these two fields to display them on portal invoice
+    _columns = {'paid_date': fields.date("Payment date"),
+                'paid_amount': fields.float("Amount paid")}
 
     def get_invoice_id(self, cr, uid, ref, montant, context=None):
         """ search and return invoice id for the given reference """
@@ -102,6 +106,8 @@ vérifiez les montants et effectuer le lettrage manuellement""")
         move_id = self.create_move(cr, uid, invoice)
         move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
         if invoice:
+            self.write(
+                cr, uid, [invoice_id], {'paid_date': datetime.today(), 'paid_amount': montant})
             self.reconcile(cr, uid, invoice, move_line_id, montant)
         # nocommit can be used for unit tests
         if not nocommit:
