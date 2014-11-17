@@ -105,13 +105,14 @@ vérifiez les montants et effectuer le lettrage manuellement""")
         invoice = self.browse(cr, uid, invoice_id) if invoice_id else False
         move_id = self.create_move(cr, uid, invoice)
         move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
-        if invoice:
-            self.write(
-                cr, uid, [invoice_id], {'paid_date': datetime.today(), 'paid_amount': montant})
-            self.reconcile(cr, uid, invoice, move_line_id, montant)
         # nocommit can be used for unit tests
         if not nocommit:
             try:
+                if invoice:
+                    self.write(
+                        cr, uid, [invoice_id],
+                        {'paid_date': datetime.today(), 'paid_amount': montant})
+                    self.reconcile(cr, uid, invoice, move_line_id, montant)
                 cr.commit()
             except psycopg2.TransactionRollbackError:
                 # just rollback and retry to validate the invoice a second time
