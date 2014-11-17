@@ -156,9 +156,10 @@ class PayboxController(openerpweb.Controller):
             return url
         if ref and montant and erreur in ERROR_SUCCESS:
             if self.get_invoice_state(cr, db, invoice_id) == 'paid':
-                self.invoice_message_post(
-                    cr, db, [invoice_id], u"Facture déjà payée",
-                    u"Paiement en ligne non pris en compte")
+                logger.info(u"Facture déjà payée", u"Paiement non pris en compte")
+                # self.invoice_message_post(
+                #    cr, db, [invoice_id], u"Facture déjà payée",
+                #    u"Paiement en ligne non pris en compte")
                 return url
             invoice_id = self.validate_invoice(cr, db, ref, montant)
             if not invoice_id:
