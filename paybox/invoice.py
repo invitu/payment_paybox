@@ -115,8 +115,8 @@ vérifiez les montants et effectuer le lettrage manuellement""")
                     self.reconcile(cr, uid, invoice, move_line_id, montant)
                 cr.commit()
             except psycopg2.TransactionRollbackError:
-                # just rollback and retry to validate the invoice a second time
-                if attempt < 2:
+                # just rollback and retry validate the invoice
+                if attempt < 5:
                     cr.rollback()
                     return self.validate_invoice_paybox(cr, uid, ref, montant, attempt=attempt+1)
                 else:
