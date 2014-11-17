@@ -115,6 +115,7 @@ vérifiez les montants et effectuer le lettrage manuellement""")
                     self.reconcile(cr, uid, invoice, move_line_id, montant)
                 cr.commit()
             except psycopg2.extensions.TransactionRollbackError:
+                logger.warning(u"Unable to validate invoice", u"TransactionRollbackError catched")
                 # just rollback and retry validate the invoice
                 if attempt < 5:
                     cr.rollback()
