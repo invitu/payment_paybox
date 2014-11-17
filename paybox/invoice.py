@@ -103,12 +103,13 @@ vérifiez les montants et effectuer le lettrage manuellement""")
         montant = float(montant)/100
         invoice_id = self.get_invoice_id(cr, uid, ref, montant)
         invoice = self.browse(cr, uid, invoice_id) if invoice_id else False
-        move_id = self.create_move(cr, uid, invoice)
-        move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
+        if not invoice or invoice.state == 'open':
+            move_id = self.create_move(cr, uid, invoice)
+            move_line_id = self.create_move_lines(cr, uid, invoice, move_id, montant)
         # nocommit can be used for unit tests
         if not nocommit:
             try:
-                if invoice:
+                if invoice and invoice.state == 'open':
                     self.write(
                         cr, uid, [invoice_id],
                         {'paid_date': datetime.today(), 'paid_amount': montant})
@@ -117,7 +118,7 @@ vérifiez les montants et effectuer le lettrage manuellement""")
             except psycopg2.extensions.TransactionRollbackError:
                 logger.warning(u"Unable to validate invoice", u"TransactionRollbackError catched")
                 # just rollback and retry validate the invoice
-                if attempt < 5:
+                if attempt < 10:
                     cr.rollback()
                     return self.validate_invoice_paybox(cr, uid, ref, montant, attempt=attempt+1)
                 else:
