@@ -114,7 +114,7 @@ vérifiez les montants et effectuer le lettrage manuellement""")
                         {'paid_date': datetime.today(), 'paid_amount': montant})
                     self.reconcile(cr, uid, invoice, move_line_id, montant)
                 cr.commit()
-            except psycopg2.TransactionRollbackError:
+            except psycopg2.extensions.TransactionRollbackError:
                 # just rollback and retry validate the invoice
                 if attempt < 5:
                     cr.rollback()
