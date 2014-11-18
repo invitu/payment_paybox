@@ -205,6 +205,9 @@ class PayboxController(openerpweb.Controller):
     def refused(self, req, **kw):
         logger.info(u"REFUSE")
         cr = pooler.get_db(req.params['db']).cursor()
+        if 'Ref' not in req.params:
+            cr.close()
+            return werkzeug.utils.redirect('/', 303)
         invoice_id = self.get_invoice_id(cr, req.params['db'], req.params['Ref'])
         url = self.get_invoice_url(cr, req.params['db'], invoice_id)
         cr.commit()
@@ -215,6 +218,9 @@ class PayboxController(openerpweb.Controller):
     def cancelled(self, req, **kw):
         logger.info(u"ANNULE")
         cr = pooler.get_db(req.params['db']).cursor()
+        if 'Ref' not in req.params:
+            cr.close()
+            return werkzeug.utils.redirect('/', 303)
         invoice_id = self.get_invoice_id(cr, req.params['db'], req.params['Ref'])
         url = self.get_invoice_url(cr, req.params['db'], invoice_id)
         cr.commit()
