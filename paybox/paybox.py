@@ -84,7 +84,8 @@ Vérifiez votre connectivité """)
         if reference:
             invoice_ids = invoice.search(cr, uid, [('number', '=', reference)])
             if invoice_ids:
-                porteur = invoice.browse(cr, uid, invoice_ids[0]).partner_id.email
+                partner = invoice.browse(cr, uid, invoice_ids[0]).partner_id
+                porteur = partner.email if partner.email else porteur
         url = self.check_paybox_url(cr, uid, paybox_values['url'])
         url += paiement_cgi
         url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
