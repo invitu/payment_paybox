@@ -18,7 +18,6 @@
     <input type="hidden" name="PBX_EFFECTUE" value="${effectue}"/>
     <input type="hidden" name="PBX_REFUSE" value="${refuse}"/>
     <input type="hidden" name="PBX_ANNULE" value="${annule}"/>
-    <input type="hidden" name="PBX_RUF1" value="${ruf1}"/>
     <input type="hidden" name="PBX_REPONDRE_A" value="${ipn}"/>
     <input type="hidden" name="PBX_HMAC" value="${hmac}"/>
     <table>

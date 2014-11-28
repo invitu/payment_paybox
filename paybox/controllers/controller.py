@@ -121,6 +121,7 @@ class PayboxController(openerpweb.Controller):
 
     def compute_response(self, cr, params, msg):
         """ check response and do what we are supposed to do """
+        logger.info(u"Compute response")
         key = urllib.urlopen(pubkey).read()
         # we maybe need to handle cases when db & ref are not in params
         db, ref = params['db'], params['Ref']
@@ -151,6 +152,7 @@ class PayboxController(openerpweb.Controller):
                 u"Une erreur est survenue : %s" % (error_msg))
             return url
         if not sign.verify(signature, msg, key):
+            logger.warning(u"Signature non vérifiée")
             self.invoice_message_post(
                 cr, db, [invoice_id], u"Paiement refusé", u"Signature non vérifiée")
             return url
@@ -190,12 +192,11 @@ class PayboxController(openerpweb.Controller):
         cr = pooler.get_db(req.params['db']).cursor()
         # The 'db' args is not used to construct the signature
         if req.httprequest.environ['REQUEST_METHOD'] == 'GET':
-            msg = req.httprequest.environ['QUERY_STRING']
-            mt_pos = msg.find('&Mt')
-            msg = msg[mt_pos:]
+            logger.info(u"GET")
+            msg = self.build_args(req.params)
         else:
-            args = req.httprequest.form
-            msg = self.build_args(args)
+            logger.info(u"POST")
+            msg = self.build_args(req.httprequest.form)
         self.compute_response(cr, req.params, msg)
         cr.commit()
         cr.close()

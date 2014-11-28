@@ -88,7 +88,7 @@ Vérifiez votre connectivité """)
                 porteur = partner.email if partner.email else porteur
         url = self.check_paybox_url(cr, uid, paybox_values['url'])
         url += paiement_cgi
-        url_retour, ruf1 = paybox_values['retour'], paybox_values['method']
+        url_retour = paybox_values['retour']
         url_ipn = paybox_values['ipn']
         # the paybox amount need to be formated in cents so we convert it
         amount = str(int(amount*100))
@@ -106,11 +106,11 @@ Vérifiez votre connectivité """)
                 '&PBX_RETOUR=' + retour + '&PBX_TIME=' + time +
                 '&PBX_EFFECTUE=' + url_effectue + '&PBX_REFUSE=' + url_refuse +
                 '&PBX_ANNULE=' + url_annule +
-                '&PBX_RUF1=' + ruf1 + '&PBX_REPONDRE_A=' + url_ipn)
+                '&PBX_REPONDRE_A=' + url_ipn)
         hmac = self.compute_hmac(key, _hash, args)
         return dict(hmac=hmac, hash=_hash, porteur=porteur, url=url, identifiant=identifiant,
                     rank=rang, site=site, url_ipn=url_ipn, refuse=url_refuse, time=time,
-                    devise=devise, retour=retour, ruf1=ruf1, annule=url_annule, amount=amount,
+                    devise=devise, retour=retour, annule=url_annule, amount=amount,
                     effectue=url_effectue)
 
     def render_payment_block(self, cr, uid, object, reference, currency,
@@ -143,7 +143,7 @@ Données insuffisantes """)
                     url=vals['url'], hash=vals['hash'], porteur=vals['porteur'],
                     identifiant=vals['identifiant'], rank=vals['rank'], site=vals['site'],
                     ipn=vals['url_ipn'], time=vals['time'], devise=vals['devise'],
-                    retour=vals['retour'], effectue=vals['effectue'], ruf1=vals['ruf1'],
+                    retour=vals['retour'], effectue=vals['effectue'],
                     annule=vals['annule'], refuse=vals['refuse'], context=context, **kwargs)
             else:
                 content = this.render(
@@ -185,7 +185,7 @@ Données insuffisantes """)
                 result = MakoTemplate(this.form_template).render_unicode(
                     object=object, reference=reference, currency=currency, amount=amount,
                     url=url, hash=hash, porteur=porteur, identifiant=identifiant, rank=rank,
-                    site=site, effectue=effectue, annule=annule, refuse=refuse, ruf1=ruf1,
+                    site=site, effectue=effectue, annule=annule, refuse=refuse,
                     time=time, devise=devise, retour=retour, hmac=hmac, ipn=ipn,
                     kind=i18n_kind, quote=quote, ctx=context, format_exceptions=True)
             else:
