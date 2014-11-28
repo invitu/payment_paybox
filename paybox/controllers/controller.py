@@ -6,6 +6,7 @@ from openerp import pooler, SUPERUSER_ID
 from ..paybox_signature import Signature
 import urllib
 import werkzeug.utils
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +198,7 @@ class PayboxController(openerpweb.Controller):
         else:
             logger.info(u"POST")
             msg = self.build_args(req.httprequest.form)
+        time.sleep(2)
         self.compute_response(cr, req.params, msg)
         cr.commit()
         cr.close()
