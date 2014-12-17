@@ -50,7 +50,7 @@ class TestPaybox(TransactionCase):
         self.invoice.action_move_create(cr, uid, [invoice_id])
         self.invoice.invoice_validate(cr, uid, [invoice_id])
         cr.commit()
-        # check if the function return the good result ...
+        # check if the function returns the good result ...
         self.assertEquals(
             invoice_id, self.invoice.get_invoice_id(cr, uid, self.invoice.browse(
                 cr, uid, invoice_id).number, 125, {}))
