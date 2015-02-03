@@ -112,7 +112,8 @@ vérifiez les montants et effectuer le lettrage manuellement""")
                 if invoice and invoice.state == 'open':
                     self.write(
                         cr, uid, [invoice_id],
-                        {'paid_date': datetime.today(), 'paid_amount': montant})
+                        {'paid_date': datetime.today(), 'paid_amount': montant},
+                        {'paybox': True})
                     self.reconcile(cr, uid, invoice, move_line_id, montant)
                 cr.commit()
             except psycopg2.extensions.TransactionRollbackError:
