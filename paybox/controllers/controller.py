@@ -62,7 +62,10 @@ class PayboxController(openerpweb.Controller):
     _cp_path = '/paybox'
 
     def build_args(self, args):
-        msg = 'Mt='+args['Mt']+'&Ref='+urllib.quote_plus(args['Ref'])+'&Auto='+args['Auto']
+        if 'Auto' not in args:
+            msg = 'Mt='+args['Mt']+'&Ref='+urllib.quote_plus(args['Ref'])
+        else:
+            msg = 'Mt='+args['Mt']+'&Ref='+urllib.quote_plus(args['Ref'])+'&Auto='+args['Auto']
         msg += '&Erreur='+args['Erreur']+'&Signature='+args['Signature']
         return msg
 
