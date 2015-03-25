@@ -30,10 +30,7 @@
     'author': 'Anybox',
     'website': 'www.anybox.fr',
     'depends': [
-        'base',
-        'web',
-        'portal',
-        'portal_sale',
+        'payment',
     ],
     'data': [
         'paybox_data.xml',

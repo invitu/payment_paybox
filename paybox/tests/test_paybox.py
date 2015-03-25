@@ -12,7 +12,7 @@ class TestPaybox(TransactionCase):
 
     def setUp(self):
         super(TestPaybox, self).setUp()
-        self.acquirer = self.registry('portal.payment.acquirer')
+        self.acquirer = self.registry('payment.acquirer')
         self.invoice = self.registry('account.invoice')
         self.journal = self.registry('account.journal')
         self.account = self.registry('account.account')

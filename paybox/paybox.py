@@ -29,7 +29,12 @@ server_status_ok = '<div id="server_status" style="text-align:center;">OK</div>'
 
 class PayboxAcquirer(osv.Model):
 
-    _inherit = 'portal.payment.acquirer'
+    _inherit = 'payment.acquirer'
+
+    def _get_providers(self, cr, uid, context=None):
+        providers = super(PayboxAcquirer, self)._get_providers(cr, uid, context=context)
+        providers.append(['paybox', 'Paybox'])
+        return providers
 
     def get_paybox_settings(self, cr, uid, ids, context=None):
         """ return paybox settings values """
