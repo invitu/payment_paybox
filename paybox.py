@@ -2,9 +2,7 @@
 from openerp.osv import osv
 import binascii
 import hashlib
-import hmac
 import urllib
-from urllib import quote as quote
 import logging
 from datetime import datetime
 from openerp.tools.translate import _
@@ -12,11 +10,6 @@ from openerp.tools import float_repr
 
 
 _logger = logging.getLogger(__name__)
-
-try:
-    from mako.template import Template as MakoTemplate
-except ImportError:
-    _logger.warning("Mako templates not available, payment acquirer will not work!")
 
 DEVISE = {'Euros': '978'}
 HASH = {'SHA512': hashlib.sha512}
@@ -112,7 +105,9 @@ Vérifiez votre connectivité """)
                 '&PBX_EFFECTUE=' + url_effectue + '&PBX_REFUSE=' + url_refuse +
                 '&PBX_ANNULE=' + url_annule +
                 '&PBX_REPONDRE_A=' + url_ipn)
-        hmac = self.compute_hmac(key, _hash, args)
+        # FIXME
+        #hmac = self.compute_hmac(key, _hash, args)
+        hmac = None
         return dict(hmac=hmac, hash=_hash, porteur=porteur, url=url, identifiant=identifiant,
                     rank=rang, site=site, url_ipn=url_ipn, refuse=url_refuse, time=time,
                     devise=devise, retour=retour, annule=url_annule, amount=amount,
@@ -164,45 +159,58 @@ Données insuffisantes """)
         try:
             binary_key = binascii.unhexlify(key)
         except:
+            _logger.exception("Cannot decode key")
             # We may just log this error and not raise exception
             raise osv.except_osv(u"Calcul HMAC impossible", u"Vérifiez la valeur de la clé")
         concat_args = args
         try:
+            import hmac
             hmac_value = hmac.new(binary_key, concat_args, HASH[hash_name]).hexdigest().upper()
         except:
             # We may just log this error and not raise exception
+            _logger.exception("Calcul HMAC impossible")
             raise osv.except_osv(u"Calcul HMAC impossible", u"Une erreur s'est produite")
         return hmac_value
 
-    def render(self, cr, uid, id, object, reference, currency, amount, url=None, hash=None,
-               porteur=None, identifiant=None, rank=None, site=None, time=None, devise=None,
-               retour=None, effectue=None, annule=None, refuse=None, ruf1=None,
-               hmac=None, ipn=None, context=None, **kwargs):
-        """ Renders the form template of the given acquirer as a mako template  """
-        if not isinstance(id, (int, long)):
-            id = id[0]
-        this = self.browse(cr, uid, id)
-        if context is None:
-            context = {}
-        try:
-            i18n_kind = _(object._description)  # may fail to translate, but at least we try
-            if this.name == 'Paybox':
-                result = MakoTemplate(this.form_template).render_unicode(
-                    object=object, reference=reference, currency=currency, amount=amount,
-                    url=url, hash=hash, porteur=porteur, identifiant=identifiant, rank=rank,
-                    site=site, effectue=effectue, annule=annule, refuse=refuse,
-                    time=time, devise=devise, retour=retour, hmac=hmac, ipn=ipn,
-                    kind=i18n_kind, quote=quote, ctx=context, format_exceptions=True)
-            else:
-                result = MakoTemplate(this.form_template).render_unicode(
-                    object=object, reference=reference, currency=currency,
-                    amount=amount, kind=i18n_kind, quote=quote, ctx=context,
-                    format_exceptions=True)
-            return result.strip()
-        except Exception:
-            _logger.exception("failed to render mako template value for payment.acquirer %s: %r",
-                              this.name, this.form_template)
-            return
+    def paybox_form_generate_values(self, cr, uid, id, partner_values, tx_values, context=None):
+        reference = tx_values['reference']
+        currency = tx_values['currency'] and tx_values['currency'].name or ''
+        amount = tx_values['amount']
+        vals = self.build_paybox_args(
+            cr, uid, reference, currency, amount, context=context)
+
+        tx_values.update(vals)
+        return partner_values, tx_values
+
+    def paypal_form_generate_values(self, cr, uid, id, partner_values, tx_values, context=None):
+        base_url = self.pool['ir.config_parameter'].get_param(cr, SUPERUSER_ID, 'web.base.url')
+        acquirer = self.browse(cr, uid, id, context=context)
+
+        paypal_tx_values = dict(tx_values)
+        paypal_tx_values.update({
+            'cmd': '_xclick',
+            'business': acquirer.paypal_email_account,
+            'item_name': '%s: %s' % (acquirer.company_id.name, tx_values['reference']),
+            'item_number': tx_values['reference'],
+            'amount': tx_values['amount'],
+            'currency_code': tx_values['currency'] and tx_values['currency'].name or '',
+            'address1': partner_values['address'],
+            'city': partner_values['city'],
+            'country': partner_values['country'] and partner_values['country'].name or '',
+            'state': partner_values['state'] and partner_values['state'].name or '',
+            'email': partner_values['email'],
+            'zip': partner_values['zip'],
+            'first_name': partner_values['first_name'],
+            'last_name': partner_values['last_name'],
+            'return': '%s' % urlparse.urljoin(base_url, PaypalController._return_url),
+            'notify_url': '%s' % urlparse.urljoin(base_url, PaypalController._notify_url),
+            'cancel_return': '%s' % urlparse.urljoin(base_url, PaypalController._cancel_url),
+        })
+        if acquirer.fees_active:
+            paypal_tx_values['handling'] = '%.2f' % paypal_tx_values.pop('fees', 0.0)
+        if paypal_tx_values.get('return_url'):
+            paypal_tx_values['custom'] = json.dumps({'return_url': '%s' % paypal_tx_values.pop('return_url')})
+        return partner_values, paypal_tx_values
 
     def _wrap_payment_block(self, cr, uid, html_block, amount,
                             currency, acquirer=None, context=None):

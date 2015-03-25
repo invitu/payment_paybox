@@ -16,16 +16,11 @@
             <input type="hidden" name="PBX_EFFECTUE" t-att-value="tx_values['effectue']"/>
             <input type="hidden" name="PBX_REFUSE" t-att-value="tx_values['refuse']"/>
             <input type="hidden" name="PBX_ANNULE" t-att-value="tx_values['annule']"/>
-            <input type="hidden" name="PBX_REPONDRE_A" t-att-value="tx_values['ipn']"/>
+            <input type="hidden" name="PBX_REPONDRE_A" t-att-value="tx_values['url_ipn']"/>
             <input type="hidden" name="PBX_HMAC" t-att-value="tx_values['hmac']"/>
-            <table>
-              <tr>
-                <td style="text-align: center; padding: 5px;"><img src="paybox/static/src/img/paybox_logo.png"/></td>
-              </tr>
-              <tr>
-                <td style="text-align: center; padding: 5px;"><input type="submit" value="Payer en ligne" style="background: none repeat scroll 0 0 #FFFFFF !important;"/></td>
-              </tr>
-            </table>
+            <button type="submit" width="100px" t-att-class="submit_class">
+                Payer en ligne <span class="fa fa-long-arrow-right"/>
+            </button>
           </form>
         </template>
 

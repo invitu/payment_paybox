@@ -1,5 +1,5 @@
 # coding: utf-8
-from openerp.addons.web import http as openerpweb
+from openerp import http
 import logging
 from openerp.modules.registry import RegistryManager
 from openerp import pooler, SUPERUSER_ID
@@ -57,7 +57,7 @@ AUTH_CODE = {
     }
 
 
-class PayboxController(openerpweb.Controller):
+class PayboxController(http.Controller):
 
     _cp_path = '/paybox'
 
@@ -180,7 +180,7 @@ class PayboxController(openerpweb.Controller):
                 cr, db, [invoice_id], u"Paiement refusé", u"Une erreur est survenue")
             return url
 
-    @openerpweb.httprequest
+    @http.route("/paybox/index")
     def index(self, req, **kw):
         logger.info(u"EFFECTUE")
         cr = pooler.get_db(req.params['db']).cursor()
@@ -190,7 +190,7 @@ class PayboxController(openerpweb.Controller):
         cr.close()
         return werkzeug.utils.redirect(url, 303)
 
-    @openerpweb.httprequest
+    @http.route("/paybox/ipn")
     def ipn(self, req, **kw):
         logger.info(u"IPN")
         cr = pooler.get_db(req.params['db']).cursor()
@@ -207,7 +207,7 @@ class PayboxController(openerpweb.Controller):
         cr.close()
         return ""
 
-    @openerpweb.httprequest
+    @http.route("/paybox/refused")
     def refused(self, req, **kw):
         logger.info(u"REFUSE")
         cr = pooler.get_db(req.params['db']).cursor()
@@ -220,7 +220,7 @@ class PayboxController(openerpweb.Controller):
         cr.close()
         return werkzeug.utils.redirect(url, 303)
 
-    @openerpweb.httprequest
+    @http.route("/paybox/cancelled")
     def cancelled(self, req, **kw):
         logger.info(u"ANNULE")
         cr = pooler.get_db(req.params['db']).cursor()

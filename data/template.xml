@@ -7,7 +7,7 @@
             <field name="subject">[Anybox Paybox] Avertissement lettrage</field>
             <field name="email_to">${object.get_paybox_admin()}</field>
             <field name="lang">${user.lang}</field>
-            <field name="model_id" ref="paybox.model_paybox_warning"/>
+            <field name="model_id" ref="payment_paybox.model_paybox_warning"/>
             <field name="auto_delete" eval="True"/>
             <field name="body_html">
                 Une erreur s'est produite lors de la tentative de validation d'un paiement Paybox.
@@ -24,7 +24,7 @@
             <field name="subject">[Anybox Paybox] Facture non trouvée</field>
             <field name="email_to">${object.get_paybox_admin()}</field>
             <field name="lang">${user.lang}</field>
-            <field name="model_id" ref="paybox.model_paybox_warning"/>
+            <field name="model_id" ref="payment_paybox.model_paybox_warning"/>
             <field name="auto_delete" eval="True"/>
             <field name="body_html">
                 Une erreur s'est produite lors de la tentative de validation d'un paiement Paybox.
