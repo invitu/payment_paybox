@@ -105,9 +105,7 @@ Vérifiez votre connectivité """)
                 '&PBX_EFFECTUE=' + url_effectue + '&PBX_REFUSE=' + url_refuse +
                 '&PBX_ANNULE=' + url_annule +
                 '&PBX_REPONDRE_A=' + url_ipn)
-        # FIXME
-        #hmac = self.compute_hmac(key, _hash, args)
-        hmac = None
+        hmac = self.compute_hmac(key, _hash, args)
         return dict(hmac=hmac, hash=_hash, porteur=porteur, url=url, identifiant=identifiant,
                     rank=rang, site=site, url_ipn=url_ipn, refuse=url_refuse, time=time,
                     devise=devise, retour=retour, annule=url_annule, amount=amount,
