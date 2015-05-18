@@ -2,7 +2,6 @@
 from openerp.osv import osv
 import binascii
 import hashlib
-import urllib
 import logging
 from datetime import datetime
 from openerp.tools.translate import _
@@ -13,10 +12,7 @@ _logger = logging.getLogger(__name__)
 
 DEVISE = {'Euros': '978'}
 HASH = {'SHA512': hashlib.sha512}
-URL = [('Production', 'https://tpeweb.paybox.com'),
-       ('Production (secours)', 'https://tpeweb1.paybox.com')]
 paiement_cgi = 'cgi/MYchoix_pagepaiement.cgi'
-load = 'load.htm'
 server_status_ok = '<div id="server_status" style="text-align:center;">OK</div>'
 
 
@@ -34,34 +30,6 @@ class PayboxAcquirer(osv.Model):
         paybox_values = self.pool.get('paybox.settings').get_default_paybox_settings(
             cr, uid, ids, context)
         return paybox_values
-
-    def check_paybox_url(self, cr, uid, url, context=None):
-        """ check if the server aimed is ok. The second url is used if problems are encountered"""
-        url_load = url+load
-        response = ''
-        try:
-            response = urllib.urlopen(url_load).read()
-        except:
-            _logger.error(u"""[Paybox] - Vérification échouée, l'URL semble non accessible.
-Essaie d'une url différente...""")
-        if server_status_ok not in response:
-            for prod_url in URL:
-                if url in prod_url:
-                    if URL.index(prod_url) == 0:
-                        url = URL[1][1]
-                    else:
-                        url = URL[0][1]
-                    break
-        url_load = url+load
-        try:
-            response = urllib.urlopen(url_load).read()
-        except:
-            _logger.error(u"""[Paybox] - Vérification échouée, l'URL semble non accessible.
-Vérifiez votre connectivité """)
-            raise osv.except_osv(
-                u"L'url du serveur Paybox semble inaccessible",
-                u"Vérifiez l'état de votre connection")
-        return url
 
     def build_paybox_args(self, cr, uid, reference, currency, amount, context=None):
         """ return args needed to fill paybox form. Most of the args needed are
@@ -84,7 +52,7 @@ Vérifiez votre connectivité """)
             if invoice_ids:
                 partner = invoice.browse(cr, uid, invoice_ids[0]).partner_id
                 porteur = partner.email if partner.email else porteur
-        url = self.check_paybox_url(cr, uid, paybox_values['url'])
+        url = paybox_values['url']
         url += paiement_cgi
         url_retour = paybox_values['retour']
         url_ipn = paybox_values['ipn']
@@ -180,36 +148,6 @@ Données insuffisantes """)
         tx_values.update(vals)
         return partner_values, tx_values
 
-    def paypal_form_generate_values(self, cr, uid, id, partner_values, tx_values, context=None):
-        base_url = self.pool['ir.config_parameter'].get_param(cr, SUPERUSER_ID, 'web.base.url')
-        acquirer = self.browse(cr, uid, id, context=context)
-
-        paypal_tx_values = dict(tx_values)
-        paypal_tx_values.update({
-            'cmd': '_xclick',
-            'business': acquirer.paypal_email_account,
-            'item_name': '%s: %s' % (acquirer.company_id.name, tx_values['reference']),
-            'item_number': tx_values['reference'],
-            'amount': tx_values['amount'],
-            'currency_code': tx_values['currency'] and tx_values['currency'].name or '',
-            'address1': partner_values['address'],
-            'city': partner_values['city'],
-            'country': partner_values['country'] and partner_values['country'].name or '',
-            'state': partner_values['state'] and partner_values['state'].name or '',
-            'email': partner_values['email'],
-            'zip': partner_values['zip'],
-            'first_name': partner_values['first_name'],
-            'last_name': partner_values['last_name'],
-            'return': '%s' % urlparse.urljoin(base_url, PaypalController._return_url),
-            'notify_url': '%s' % urlparse.urljoin(base_url, PaypalController._notify_url),
-            'cancel_return': '%s' % urlparse.urljoin(base_url, PaypalController._cancel_url),
-        })
-        if acquirer.fees_active:
-            paypal_tx_values['handling'] = '%.2f' % paypal_tx_values.pop('fees', 0.0)
-        if paypal_tx_values.get('return_url'):
-            paypal_tx_values['custom'] = json.dumps({'return_url': '%s' % paypal_tx_values.pop('return_url')})
-        return partner_values, paypal_tx_values
-
     def _wrap_payment_block(self, cr, uid, html_block, amount,
                             currency, acquirer=None, context=None):
         """ override original method to add the paybox html block """
@@ -248,3 +186,17 @@ Données insuffisantes """)
                          %%s
                      </div>""" % (amount, payment_header)
         return result % html_block
+
+    def _get_paybox_urls(self, cr, uid, environment, context=None):
+        """ Paybox URLS """
+        paybox_values = self.get_paybox_settings(cr, uid, None)
+        url = paybox_values['url']
+        url += paiement_cgi
+
+        return {
+            'paybox_form_url': url
+        }
+
+    def paybox_get_form_action_url(self, cr, uid, id, context=None):
+        acquirer = self.browse(cr, uid, id, context=context)
+        return self._get_paybox_urls(cr, uid, acquirer.environment, context=context)['paybox_form_url']
