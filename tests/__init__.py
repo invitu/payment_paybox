@@ -1,3 +1,3 @@
 # flake8: noqa
 
-import test_paybox
+from . import test_paybox

@@ -19,22 +19,23 @@ class TestPaybox(TransactionCase):
         self.partner = self.registry('res.partner')
         self.product = self.registry('product.product')
         self.invoice_line = self.registry('account.invoice.line')
-        self.voucher = self.registry('account.voucher')
         self.mail = self.registry('mail.mail')
         self.sign = Signature()
         self.controller = PayboxController()
         self.company_id = 1
         self.currency_id = 1
         self.product_id = self.product.search(
-            self.cr, self.uid, [('name_template', '=', 'Adhésion')])[0]
+            self.cr, self.uid, [])[0]
+        self.product_name = self.product.browse(self.cr, self.uid, self.product_id).name
         self.product_account_id = self.account.search(
             self.cr, self.uid, [('code', '=', '707100')])[0]
+        self.journal_code = "SAJ"
 
     def test_get_invoice_id(self):
         cr, uid = self.cr, self.uid
         partner_id = self.partner.create(cr, uid, {'name': 'test'})
         account_id = self.account.search(cr, uid, [('code', '=', '411100')])[0]
-        journal_id = self.journal.search(cr, uid, [('code', '=', 'SAJ')])[0]
+        journal_id = self.journal.search(cr, uid, [('code', '=', self.journal_code)])[0]
         count_mail = self.mail.search(cr, uid, [], count=True)
         # create and validate an invoice
         invoice_id = self.invoice.create(
@@ -43,7 +44,7 @@ class TestPaybox(TransactionCase):
              'company_id': self.company_id, 'journal_id': journal_id,
              'currency_id': self.currency_id, 'partner_id': partner_id, 'reference_type': 'none'})
         self.invoice_line.create(
-            cr, uid, {'account_id': self.product_account_id, 'name': 'Adhésion',
+            cr, uid, {'account_id': self.product_account_id, 'name': self.product_name,
                       'invoice_id': invoice_id, 'price_unit': '100',
                       'price_subtotal': '100', 'company_id': self.company_id, 'discount': False,
                       'quantity': '1', 'partner_id': partner_id, 'product_id': self.product_id}, {})
@@ -64,7 +65,7 @@ class TestPaybox(TransactionCase):
     def test_compute_response(self):
         """assert that compute_response method return the right url"""
         cr, uid, context = self.cr, self.uid, {}
-        sale_journal = self.journal.search(cr, uid, [('code', '=', 'SAJ')])[0]
+        sale_journal = self.journal.search(cr, uid, [('code', '=', self.journal_code)])[0]
         company_id = 1
         partner = self.partner.create(cr, uid, {'name': 'test'})
         acc = self.account.search(cr, uid, [('code', '=', '411100')])[0]
@@ -73,7 +74,7 @@ class TestPaybox(TransactionCase):
         context['active_ids'] = [partner]
         invoice_id = self.invoice.create(cr, uid, datas)
         self.invoice_line.create(
-            cr, uid, {'account_id': self.product_account_id, 'name': 'Adhésion',
+            cr, uid, {'account_id': self.product_account_id, 'name': self.product_name,
                       'invoice_id': invoice_id, 'price_unit': '100',
                       'price_subtotal': '100', 'company_id': company_id, 'discount': False,
                       'quantity': '1', 'partner_id': partner,
@@ -111,11 +112,9 @@ class TestPaybox(TransactionCase):
     def test_validate_invoice_paybox(self):
         cr, uid, context = self.cr, self.uid, {}
         product_account_id = self.account.search(cr, uid, [('code', '=', '707100')])[0]
-        sale_journal = self.journal.search(cr, uid, [('code', '=', 'SAJ')])[0]
+        sale_journal = self.journal.search(cr, uid, [('code', '=', self.journal_code)])[0]
         company_id = 1
         partner = self.partner.create(cr, uid, {'name': 'test'})
-        product_id = self.product.search(
-            cr, uid, [('name_template', '=', 'Adhésion')])[0]
         acc = self.account.search(cr, uid, [('code', '=', '411100')])[0]
         datas = {'number': 'Facture Paybox Test', 'account_id': acc,
                  'partner_id': partner, 'journal_id': sale_journal, 'payment_term': None}
@@ -125,7 +124,7 @@ class TestPaybox(TransactionCase):
             cr, uid, {'account_id': product_account_id, 'name': 'Adhésion',
                       'invoice_id': invoice_id, 'price_unit': '100',
                       'price_subtotal': '100', 'company_id': company_id, 'discount': False,
-                      'quantity': '1', 'partner_id': partner, 'product_id': product_id}, context)
+                      'quantity': '1', 'partner_id': partner, 'product_id': self.product_id}, context)
         self.invoice.action_move_create(cr, uid, [invoice_id])
         self.invoice.invoice_validate(cr, uid, [invoice_id])
         invoice = self.invoice.browse(cr, uid, invoice_id)

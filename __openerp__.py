@@ -26,11 +26,12 @@
     'version': '0.1',
     'sequence': 150,
     'category': 'Custom',
-    'description': """Paybox payment acquirer""",
+    'description': """Paybox payment acquirer (France)""",
     'author': 'Anybox',
     'website': 'www.anybox.fr',
     'depends': [
         'payment',
+        'l10n_fr'
     ],
     'data': [
         'paybox_data.xml',
