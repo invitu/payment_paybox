@@ -1,68 +1,81 @@
 # coding: utf-8
-from openerp.osv import osv
+from openerp.osv import osv, fields
 import binascii
 import hashlib
 import logging
 from datetime import datetime
 from openerp.tools.translate import _
 from openerp.tools import float_repr
-
+import urllib
+from openerp.addons.payment.models.payment_acquirer import ValidationError
+from openerp.tools.float_utils import float_compare
+from paybox_signature import Signature
+import pprint
 
 _logger = logging.getLogger(__name__)
 
-DEVISE = {'Euros': '978'}
-HASH = {'SHA512': hashlib.sha512}
-paiement_cgi = 'cgi/MYchoix_pagepaiement.cgi'
-server_status_ok = '<div id="server_status" style="text-align:center;">OK</div>'
-
+URL = [('https://preprod-tpeweb.paybox.com/', 'Test pré-production'),
+       ('https://tpeweb.paybox.com/', 'Production'),
+       ('https://tpeweb1.paybox.com/', 'Production (secours)')]
 
 class PayboxAcquirer(osv.Model):
-
     _inherit = 'payment.acquirer'
+
+    HASH = {'SHA512': hashlib.sha512}
+    paiement_cgi = 'cgi/MYchoix_pagepaiement.cgi'
+
+    _columns = {'paybox_site': fields.char("Site", size=7, required=True),
+                'paybox_rank': fields.char("Rank", size=3, required=True),
+                'paybox_shop_id': fields.char("Shop id", size=9, required=True),
+                'paybox_key': fields.char("Key", required=True, password=True),
+                'paybox_hash': fields.selection([('SHA512', 'sha512')], "Hash", required=True, select=True),
+                'paybox_url': fields.selection(URL, u"URL Paybox", required=True, select=True),
+                'paybox_return_url': fields.char(u"URL publique du serveur Odoo", required=True),
+                'paybox_method': fields.selection([('POST', 'Post'), ('GET', 'Get')], u"Méthode",
+                                           required=True, select=True),
+                'paybox_currency': fields.selection([('978', 'Euro'), ('840', 'US Dollar')], u"Devise",
+                                           required=True, select=True),
+                'paybox_admin_mail': fields.char(u"Email de l'administrateur Paybox"),
+            }
+
+    _defaults = {
+            'key': '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF',
+            'shop_id': '107904482',
+            'rank': '32',
+            'site': '1999888',
+            'hash': 'SHA512',
+            'url': 'https://preprod-tpeweb.paybox.com/',
+            'method': 'POST',
+            'devise': '978',
+         }
 
     def _get_providers(self, cr, uid, context=None):
         providers = super(PayboxAcquirer, self)._get_providers(cr, uid, context=context)
         providers.append(['paybox', 'Paybox'])
         return providers
 
-    def get_paybox_settings(self, cr, uid, ids, context=None):
-        """ return paybox settings values """
-        paybox_values = self.pool.get('paybox.settings').get_default_paybox_settings(
-            cr, uid, ids, context)
-        return paybox_values
+    def build_paybox_args(self, cr, uid, acquirer, tx_values, context=None):
+        reference = tx_values['reference']
+        amount = tx_values['amount']
+        key = acquirer['paybox_key']
+        identifiant, devise = acquirer['paybox_shop_id'], acquirer['paybox_currency']
+        rang, site = acquirer['paybox_rank'], acquirer['paybox_site']
+        _hash = acquirer['paybox_hash']
+        porteur = tx_values['partner'].email
+        url = acquirer['paybox_url']
+        url += self.paiement_cgi
+        url_retour = acquirer['paybox_return_url']
 
-    def build_paybox_args(self, cr, uid, reference, currency, amount, context=None):
-        """ return args needed to fill paybox form. Most of the args needed are
-            set in the paybox settings part """
-        db_args = "?db=%s" % (cr.dbname)
-        invoice = self.pool.get('account.invoice')
-        paybox_values = self.get_paybox_settings(cr, uid, None)
-        for value in paybox_values:
-            if not value:
-                raise osv.except_osv(
-                    u"Génération du formulaire Paybox impossible",
-                    u"Tous les champs de configuration doivent être renseignés")
-        # values extracted from the paybox settings part
-        key = unicode(paybox_values['key'])
-        identifiant, devise = paybox_values['shop_id'], paybox_values['devise']
-        rang, site = paybox_values['rank'], paybox_values['site']
-        porteur, _hash = paybox_values['porteur'], paybox_values['hash']
-        if reference:
-            invoice_ids = invoice.search(cr, uid, [('number', '=', reference)])
-            if invoice_ids:
-                partner = invoice.browse(cr, uid, invoice_ids[0]).partner_id
-                porteur = partner.email if partner.email else porteur
-        url = paybox_values['url']
-        url += paiement_cgi
-        url_retour = paybox_values['retour']
-        url_ipn = paybox_values['ipn']
+        if not url_retour:
+            raise osv.except_osv(u"Paiement impossible", u"URL de retour non configurée")
+
         # the paybox amount need to be formated in cents so we convert it
         amount = str(int(amount*100))
         retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
-        url_effectue = url_retour+db_args
-        url_annule = url_retour+'/cancelled/'+db_args
-        url_refuse = url_retour+'/refused/'+db_args
-        url_ipn = url_ipn+'/ipn/'+db_args
+        url_effectue = url_retour+'/payment/paybox/accept'
+        url_annule = url_retour+'/payment/paybox/cancel'
+        url_refuse = url_retour+'/payment/paybox/decline'
+        url_ipn = url_retour+'/payment/paybox/ipn'
         time = str(datetime.now())
         # we need to concatenate the args to compute the hmac
         args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
@@ -79,47 +92,6 @@ class PayboxAcquirer(osv.Model):
                     devise=devise, retour=retour, annule=url_annule, amount=amount,
                     effectue=url_effectue)
 
-    def render_payment_block(self, cr, uid, object, reference, currency,
-                             amount, context=None, **kwargs):
-        """ Renders all visible payment acquirer forms for the given rendering context, and
-            return them wrapped in an appropriate HTML block, ready for direct inclusion
-            in an OpenERP v7 form view """
-        acquirer_ids = self.search(cr, uid, [('visible', '=', True)])
-        if not acquirer_ids:
-            return
-        html_forms = []
-        for this in self.browse(cr, uid, acquirer_ids):
-            # Paybox case
-            acquirer = this.name
-            if acquirer == 'Paybox':
-                # just to avoid rendering for non handled payment terms
-                if object.payment_term:
-                    continue
-                # when the invoice is cancelled
-                if not reference:
-                    continue
-                vals = self.build_paybox_args(
-                    cr, uid, reference, currency, amount, context=context)
-                if not vals:
-                    _logger.warning(u"""[Paybox] - Génération formulaire Paybox impossible.
-Données insuffisantes """)
-                    continue
-                content = this.render(
-                    object, reference, vals['devise'], vals['amount'], hmac=vals['hmac'],
-                    url=vals['url'], hash=vals['hash'], porteur=vals['porteur'],
-                    identifiant=vals['identifiant'], rank=vals['rank'], site=vals['site'],
-                    ipn=vals['url_ipn'], time=vals['time'], devise=vals['devise'],
-                    retour=vals['retour'], effectue=vals['effectue'],
-                    annule=vals['annule'], refuse=vals['refuse'], context=context, **kwargs)
-            else:
-                content = this.render(
-                    object, reference, currency, amount, context=context, **kwargs)
-            if content:
-                html_forms.append(content)
-        html_block = '\n'.join(filter(None, html_forms))
-        return self._wrap_payment_block(
-            cr, uid, html_block, amount, currency, acquirer=acquirer, context=context)
-
     def compute_hmac(self, key, hash_name, args):
         """ compute hmac with key, hash and args given """
         try:
@@ -131,7 +103,7 @@ Données insuffisantes """)
         concat_args = args
         try:
             import hmac
-            hmac_value = hmac.new(binary_key, concat_args, HASH[hash_name]).hexdigest().upper()
+            hmac_value = hmac.new(binary_key, concat_args, self.HASH[hash_name]).hexdigest().upper()
         except:
             # We may just log this error and not raise exception
             _logger.exception("Calcul HMAC impossible")
@@ -139,11 +111,9 @@ Données insuffisantes """)
         return hmac_value
 
     def paybox_form_generate_values(self, cr, uid, id, partner_values, tx_values, context=None):
-        reference = tx_values['reference']
-        currency = tx_values['currency'] and tx_values['currency'].name or ''
-        amount = tx_values['amount']
+        acquirer = self.browse(cr, uid, id, context=context)
         vals = self.build_paybox_args(
-            cr, uid, reference, currency, amount, context=context)
+            cr, uid, acquirer, tx_values, context=context)
 
         tx_values.update(vals)
         return partner_values, tx_values
@@ -187,11 +157,10 @@ Données insuffisantes """)
                      </div>""" % (amount, payment_header)
         return result % html_block
 
-    def _get_paybox_urls(self, cr, uid, environment, context=None):
+    def _get_paybox_urls(self, cr, uid, acquirer, context=None):
         """ Paybox URLS """
-        paybox_values = self.get_paybox_settings(cr, uid, None)
-        url = paybox_values['url']
-        url += paiement_cgi
+        url = acquirer['paybox_url']
+        url += self.paiement_cgi
 
         return {
             'paybox_form_url': url
@@ -199,4 +168,149 @@ Données insuffisantes """)
 
     def paybox_get_form_action_url(self, cr, uid, id, context=None):
         acquirer = self.browse(cr, uid, id, context=context)
-        return self._get_paybox_urls(cr, uid, acquirer.environment, context=context)['paybox_form_url']
+        return self._get_paybox_urls(cr, uid, acquirer, context=context)['paybox_form_url']
+
+class PaymentTxPaybox(osv.Model):
+    _inherit = 'payment.transaction'
+
+    sign = Signature()
+    pubkey = 'http://www1.paybox.com/wp-content/uploads/2014/03/pubkey.pem'
+    base_url = '#id=%s&view_type=form&model=account.invoice&menu_id=%s&action=%s'
+    ERROR_SUCCESS = ['00000']
+    ERROR_CODE = {
+            '00001': u"La connexion au centre d'autorisation a échoué ou une erreur interne est survenue",
+            '001': u"Paiement refusé par le centre d'autorisation", '00003': u"Erreur Paybox",
+            '00004': u"Numéro de porteur ou cryptogramme visuel invalide",
+            '00006': u"Accès refusé ou site/rang/identifiant incorrect",
+            '00008': u"Date de fin de validité incorrecte", '00009': u"Erreur de création d'un abonnement",
+            '00010': u"Devise inconnue", '00011': u"Montant incorrect", '00015': u"Paiement déjà effectué",
+            '00016': u"Abonné déjà existant", '00021': u"Carte non autorisée",
+            '00029': u"Carte non conforme",
+            '00030': u"Temps d'attente supérieur à 15 minutes par l'acheteur au niveau la page de paiement",
+            '00033': u"Code pays de l'adresse IP du navigateur de l'acheteur non autorisé",
+            '00040': u"Opération sans authentification 3-D Secure, bloquée par le filtre",
+            }
+    AUTH_CODE = {
+            '03': u"Commerçant invalide", '05': u"Ne pas honorer",
+            '12': u"Transaction invalide", '13': u"Montant invalide",
+            '14': u"Numéro de porteur invalide", '15': u"Emetteur de carte inconnu",
+            '17': u"Annulation client", '19': u"Répéter la transaction ultérieurement",
+            '20': u"Réponse erronée (erreur dans le domaine serveur)",
+            '24': u"Mise à jour de fichier non supportée",
+            '25': u"Impossible de localiser l'enregistrement dans le fichier",
+            '26': u"Enregistrement dupliqué, ancien enregistrement remplacé",
+            '27': u"Erreur en \"edit\" sur champ de mise à jour fichier",
+            '28': u"Accès interdit au fichier", '29': u"Mise à jour de fichier impossible",
+            '30': u"Erreur de format", '33': u"Carte expirée",
+            '38': u"Nombre d'essais code confidentiel dépassé",
+            '41': u"Carte perdue", '43': u"Carte volée", '51': u"Provision insuffisante ou crédit dépassé",
+            '54': u"Date de validité de la carte dépassée", '55': u"Code confidentiel erroné",
+            '56': u"Carte absente du fichier", '57': u"Transaction non permise à ce porteur",
+            '58': u"Transaction interdite au terminal", '59': u"Suspicion de fraude",
+            '60': u"L'accepteur de carte doit contacter l'acquéreur",
+            '61': u"Dépasse la limite du montant de retrait",
+            '63': u"Règles de sécurité non respectées",
+            '68': u"Réponse non parvenue ou reçue trop tard",
+            '75': u"Nombre d'essais code confidentiel dépassé",
+            '76': u"Porteur déjà en opposition, ancien enregistrement conservé",
+            '89': u"Echec de l'authentification", '90': u"Arrêt momentané du système",
+            '91': u"Emetteur de carte inaccessible", '94': u"Demande dupliquée",
+            '96': u"Mauvais fonctionnement du système",
+            '97': u"Echéance de la temporisation de surveillance globale",
+            }
+
+    def build_args(self, args):
+        if 'Auto' not in args:
+            msg = 'Mt='+args['Mt']+'&Ref='+urllib.quote_plus(args['Ref'])
+        else:
+            msg = 'Mt='+args['Mt']+'&Ref='+urllib.quote_plus(args['Ref'])+'&Auto='+args['Auto']
+        msg += '&Erreur='+args['Erreur']+'&Signature='+args['Signature']
+        return msg
+
+    def check_error_code(self, erreur):
+        """ check if the error code is a real error or not.
+            it also build the message that will be display to the customer """
+        if erreur in self.ERROR_CODE:
+            error_msg = self.ERROR_CODE[erreur]
+            return error_msg
+        else:
+            for err in self.ERROR_CODE:
+                if erreur.startswith(err):
+                    error_msg = self.AUTH_CODE[erreur[-2:]]
+                    return error_msg
+        return False
+
+    def _paybox_form_get_tx_from_data(self, cr, uid, data, context=None):
+        for field in ('Erreur', 'Auto', 'Signature', 'Mt', 'Ref'):
+            if field not in data:
+                raise ValidationError(u"Paramètre %s non trouvé" % repr(field))
+
+        ref = data['Ref']
+        tx_ids = self.search(cr, uid, [('reference', '=', ref)], context=context)
+        if not tx_ids or len(tx_ids) > 1:
+            error_msg = 'Paybox: received data for reference %s' % ref
+            if not tx_ids:
+                error_msg += '; no order found'
+            else:
+                error_msg += '; multiple order found'
+            _logger.error(error_msg)
+            raise ValidationError(error_msg)
+
+        tx = self.pool['payment.transaction'].browse(cr, uid, tx_ids[0], context=context)
+        key = urllib.urlopen(self.pubkey).read()
+        signature = data['Signature']
+
+        msg = self.build_args(data)
+        if not self.sign.verify(signature, msg, key):
+            raise ValidationError(u"Signature non vérifiée")
+
+        return tx
+
+    def _paybox_form_get_invalid_parameters(self, cr, uid, tx, data, context=None):
+        invalid_parameters = []
+
+        # TODO: txn_id: should be false at draft, set afterwards, and verified with txn details
+        if tx.acquirer_reference and data.get('Ref') != tx.acquirer_reference:
+            invalid_parameters.append(('Ref', data.get('Ref'), tx.acquirer_reference))
+
+        actualAmount = float(int(data['Mt'])/100)
+        if float_compare(actualAmount, tx.amount, 2) != 0:
+            invalid_parameters.append(('Mt', data.get('Mt'), '%.2f' % tx.amount))
+
+        return invalid_parameters
+
+    def _paybox_form_validate(self, cr, uid, tx, data, context=None):
+        if tx.state == 'done':
+            _logger.warning('Paybox: trying to validate an already validated tx (ref %s)' % tx.reference)
+            return True
+
+        ref = data['Ref']
+        montant = data['Mt']
+
+        error_code = data['Erreur']
+        error_msg = self.check_error_code(error_code)
+
+        if error_msg:
+            error = u'Erreur Paybox [%s] %s' % (error_code, error_msg)
+            _logger.info(error)
+            tx.write({
+                'state': 'error',
+                'state_message': error,
+                'acquirer_reference': ref,
+            })
+            return False
+
+        if ref and montant and error_code in self.ERROR_SUCCESS:
+            tx.write({
+                'state': 'done',
+                #'date_validate': data['TRXDATE'],
+                'acquirer_reference': ref
+            })
+            return True
+
+        tx.write({
+            'state': 'error',
+            'state_message': "Erreur Paybox inconnue",
+            'acquirer_reference': ref,
+        })
+        return False
