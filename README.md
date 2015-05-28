@@ -1,7 +1,7 @@
-## ANYBOX_PAYBOX ##
+## Paybox payment acquirer module for Odoo ##
 
 
-Anybox_paybox is an Odoo module running on v7 version. 
+``payment_paybox`` is an Odoo module running on v7 and v8.
 
 It adds a new payment acquirer : Paybox. Just like PayPal, it includes a html form in the invoice form view but there is no specific email template created for Paybox.  
 
@@ -14,4 +14,5 @@ If you do not use Portal module yet, you might have to configure the payment acq
 
 ### Contributors ###
 
-* Florent Jouatte
+* Florent Jouatte, Anybox
+* Jean-Baptiste Quenot, Tech Coach
