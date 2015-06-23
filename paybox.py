@@ -10,7 +10,6 @@ import urllib
 from openerp.addons.payment.models.payment_acquirer import ValidationError
 from openerp.tools.float_utils import float_compare
 from paybox_signature import Signature
-import pprint
 
 _logger = logging.getLogger(__name__)
 
@@ -24,17 +23,17 @@ class PayboxAcquirer(osv.Model):
     HASH = {'SHA512': hashlib.sha512}
     paiement_cgi = 'cgi/MYchoix_pagepaiement.cgi'
 
-    _columns = {'paybox_site': fields.char("Site", size=7, required=True),
-                'paybox_rank': fields.char("Rank", size=3, required=True),
-                'paybox_shop_id': fields.char("Shop id", size=9, required=True),
-                'paybox_key': fields.char("Key", required=True, password=True),
-                'paybox_hash': fields.selection([('SHA512', 'sha512')], "Hash", required=True, select=True),
-                'paybox_url': fields.selection(URL, u"URL Paybox", required=True, select=True),
-                'paybox_return_url': fields.char(u"URL publique du serveur Odoo", required=True),
+    _columns = {'paybox_site': fields.char("Site", size=7),
+                'paybox_rank': fields.char("Rank", size=3),
+                'paybox_shop_id': fields.char("Shop id", size=9),
+                'paybox_key': fields.char("Key", password=True),
+                'paybox_hash': fields.selection([('SHA512', 'sha512')], "Hash", select=True),
+                'paybox_url': fields.selection(URL, u"URL Paybox", select=True),
+                'paybox_return_url': fields.char(u"URL publique du serveur Odoo"),
                 'paybox_method': fields.selection([('POST', 'Post'), ('GET', 'Get')], u"Méthode",
-                                           required=True, select=True),
+                                           select=True),
                 'paybox_currency': fields.selection([('978', 'Euro'), ('840', 'US Dollar')], u"Devise",
-                                           required=True, select=True),
+                                           select=True),
                 'paybox_admin_mail': fields.char(u"Email de l'administrateur Paybox"),
             }
 

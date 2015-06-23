@@ -8,16 +8,16 @@
             <field name="arch" type="xml">
                 <xpath expr='//group[@name="acquirer_display"]' position='after'>
                     <group attrs="{'invisible': [('provider', '!=', 'paybox')]}">
-                      <field name="paybox_key"/>
-                      <field name="paybox_shop_id"/>
-                      <field name="paybox_rank"/>
-                      <field name="paybox_site"/>
-                      <field name="paybox_hash"/>
-                      <field name="paybox_url"/>
-                      <field name="paybox_return_url"/>
-                      <field name="paybox_currency"/>
-                      <field name="paybox_method"/>
-                      <field name="paybox_admin_mail"/>
+                      <field name="paybox_key" required="1"/>
+                      <field name="paybox_shop_id" required="1"/>
+                      <field name="paybox_rank" required="1"/>
+                      <field name="paybox_site" required="1"/>
+                      <field name="paybox_hash" required="1"/>
+                      <field name="paybox_url" required="1"/>
+                      <field name="paybox_return_url" required="1"/>
+                      <field name="paybox_currency" required="1"/>
+                      <field name="paybox_method" required="1"/>
+                      <field name="paybox_admin_mail" required="1"/>
                     </group>
                 </xpath>
             </field>
