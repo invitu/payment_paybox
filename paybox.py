@@ -10,6 +10,7 @@ import urllib
 from openerp.addons.payment.models.payment_acquirer import ValidationError
 from openerp.tools.float_utils import float_compare
 from paybox_signature import Signature
+from urlparse import urljoin
 
 _logger = logging.getLogger(__name__)
 
@@ -71,10 +72,10 @@ class PayboxAcquirer(osv.Model):
         # the paybox amount need to be formated in cents so we convert it
         amount = str(int(amount*100))
         retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
-        url_effectue = url_retour+'/payment/paybox/accept'
-        url_annule = url_retour+'/payment/paybox/cancel'
-        url_refuse = url_retour+'/payment/paybox/decline'
-        url_ipn = url_retour+'/payment/paybox/ipn'
+        url_effectue = urljoin(url_retour, '/payment/paybox/accept')
+        url_annule = urljoin(url_retour, '/payment/paybox/cancel')
+        url_refuse = urljoin(url_retour, '/payment/paybox/decline')
+        url_ipn = urljoin(url_retour, '/payment/paybox/ipn')
         time = str(datetime.now())
         # we need to concatenate the args to compute the hmac
         args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
