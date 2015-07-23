@@ -7,10 +7,7 @@ It adds a new payment acquirer : Paybox. Just like PayPal, it includes a html fo
 
 ### Setup ###
 
-To use this module, you just have to add it. Once the module is installed, you need to configure it. Reach the Paybox settings part located in the Settings menu, fill the fields and apply changes.
-
-If you do not use Portal module yet, you might have to configure the payment acquirers and some other stuff. Don't forget to set Paybox acquirer to visible. 
-
+To use this module, you just have to add it. Once the module is installed, you need to configure it. Reach the Payment Acquirers menu located in the Settings menu, fill the fields and apply changes.
 
 ### Contributors ###
 
