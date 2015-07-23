@@ -273,9 +273,9 @@ class PaymentTxPaybox(osv.Model):
         if tx.acquirer_reference and data.get('Ref') != tx.acquirer_reference:
             invalid_parameters.append(('Ref', data.get('Ref'), tx.acquirer_reference))
 
-        actualAmount = float(int(data['Mt'])/100)
+        actualAmount = float(data['Mt'])/100
         if float_compare(actualAmount, tx.amount, 2) != 0:
-            invalid_parameters.append(('Mt', data.get('Mt'), '%.2f' % tx.amount))
+            invalid_parameters.append(('Mt', actualAmount, '%.2f' % tx.amount))
 
         return invalid_parameters
 
