@@ -119,7 +119,7 @@ class PayboxAcquirer(osv.Model):
         return partner_values, tx_values
 
     def _wrap_payment_block(self, cr, uid, html_block, amount,
-                            currency, acquirer=None, context=None):
+                            currency_id, acquirer=None, context=None):
         """ override original method to add the paybox html block """
         if not html_block:
             if acquirer and acquirer == 'Paybox':
@@ -135,6 +135,8 @@ class PayboxAcquirer(osv.Model):
                     return ''
         else:
             payment_header = _('Pay safely online')
+            currency_obj = self.pool['res.currency']
+            currency = currency_obj.browse(cr, uid, currency_id)
             currency_str = currency.symbol or currency.name
             if acquirer and acquirer == 'Paybox':
                 amount_str = float_repr(
