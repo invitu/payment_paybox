@@ -100,10 +100,10 @@ class PayboxAcquirer(osv.Model):
             _logger.exception("Cannot decode key")
             # We may just log this error and not raise exception
             raise osv.except_osv(u"Calcul HMAC impossible", u"Vérifiez la valeur de la clé")
-        concat_args = args
+
         try:
             import hmac
-            hmac_value = hmac.new(binary_key, concat_args, self.HASH[hash_name]).hexdigest().upper()
+            hmac_value = hmac.new(binary_key, args, self.HASH[hash_name]).hexdigest().upper()
         except:
             # We may just log this error and not raise exception
             _logger.exception("Calcul HMAC impossible")
