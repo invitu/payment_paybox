@@ -76,7 +76,7 @@ class PayboxAcquirer(osv.Model):
         url_annule = urljoin(url_retour, '/payment/paybox/cancel')
         url_refuse = urljoin(url_retour, '/payment/paybox/decline')
         url_ipn = urljoin(url_retour, '/payment/paybox/ipn')
-        time = str(datetime.now())
+        time = datetime.now().isoformat()
         # we need to concatenate the args to compute the hmac
         args = ('PBX_SITE=' + site + '&PBX_RANG=' + rang +
                 '&PBX_HASH=' + _hash + '&PBX_CMD=' + reference +
