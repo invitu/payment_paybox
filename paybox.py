@@ -249,13 +249,14 @@ class PaymentTxPaybox(osv.Model):
 
         ref = data['Ref']
         tx_ids = self.search(cr, uid, [('reference', '=', ref)], context=context)
-        if not tx_ids or len(tx_ids) > 1:
-            error_msg = 'Paybox: received data for reference %s' % ref
-            if not tx_ids:
-                error_msg += '; no order found'
-            else:
-                error_msg += '; multiple order found'
-            _logger.error(error_msg)
+        error_msg = 'Paybox: received data for reference %s' % ref
+
+        if not tx_ids:
+            error_msg += '; no transaction found'
+            raise ValidationError(error_msg)
+
+        if len(tx_ids) > 1:
+            error_msg += '; multiple transactions found'
             raise ValidationError(error_msg)
 
         tx = self.pool['payment.transaction'].browse(cr, uid, tx_ids[0], context=context)
