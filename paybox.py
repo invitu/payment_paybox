@@ -69,8 +69,8 @@ class PayboxAcquirer(osv.Model):
         if not url_retour:
             raise osv.except_osv(u"Paiement impossible", u"URL de retour non configurée")
 
-        # the paybox amount need to be formated in cents so we convert it
-        amount = str(int(amount*100))
+        # the paybox amount need to be formated in cents and zero-padded to be at least 3 characters long
+        amount = "%03u" % int(amount*100)
         retour = u"Mt:M;Ref:R;Auto:A;Erreur:E;Signature:K"
         url_effectue = urljoin(url_retour, '/payment/paybox/accept')
         url_annule = urljoin(url_retour, '/payment/paybox/cancel')
